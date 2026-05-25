@@ -1665,16 +1665,24 @@ const loaderMsg = $('vLoaderMsg');
 const ctx      = bgCanvas.getContext('2d', { alpha: false });
 
 /* Cantidad de frames pre-decodificados — más = más fluido pero más memoria.
-   Adaptativo: menos en móvil para no agotar RAM. */
+   En móvil intentamos un modo scroll más ligero, con fallback automático. */
 const IS_MOBILE  = window.matchMedia('(max-width: 720px)').matches;
-const USE_NATIVE_MOBILE_VIDEO = IS_MOBILE;
-const FRAME_COUNT = IS_MOBILE ? 60 : 90;
+const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+  || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const SUPPORTS_IMAGE_BITMAP = typeof createImageBitmap === 'function';
+const CAN_TRY_SCROLL_VIDEO_ON_MOBILE = IS_MOBILE && !IS_IOS && SUPPORTS_IMAGE_BITMAP;
+const SHOULD_TRY_SCROLL_VIDEO = !IS_MOBILE || CAN_TRY_SCROLL_VIDEO_ON_MOBILE;
+const FRAME_COUNT = IS_MOBILE ? 42 : 90;
 /* Resolución máxima de cada bitmap (ancho). Mantenemos el aspect ratio. */
 const MAX_BMP_W  = IS_MOBILE ? 720 : 1280;
+const MOBILE_SCROLL_BOOT_TIMEOUT = 4500;
 
 const frames = [];   /* Array<ImageBitmap> con los frames pre-decodificados */
 let ready    = false;
 let lastIdx  = -1;
+let bgMode   = 'pending';
+let decodeRunId = 0;
+let nativeVideoListenersBound = false;
 
 /* Ajusta el canvas al viewport con DPR para que se vea nítido */
 function resizeCanvas() {
@@ -1710,10 +1718,10 @@ function drawFrame(bmp) {
 
 /* Calcula el frame correspondiente a la posición de scroll y lo dibuja */
 function drawForScroll() {
-  if (!ready || frames.length === 0) return;
   const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
   const pct = maxScroll > 0 ? Math.max(0, Math.min(1, window.scrollY / maxScroll)) : 0;
   progress.style.width = (pct * 100) + '%';
+  if (!ready || bgMode !== 'scroll' || frames.length === 0) return;
   const idx = Math.round(pct * (frames.length - 1));
   if (idx !== lastIdx) {
     drawFrame(frames[idx]);
@@ -1729,11 +1737,20 @@ function rafLoop() {
 requestAnimationFrame(rafLoop);
 
 /* Helper: hace seek y espera al frame */
-function seekTo(t) {
+function seekTo(t, runId) {
   return new Promise(resolve => {
-    const onSeeked = () => { bgVideo.removeEventListener('seeked', onSeeked); resolve(); };
+    let done = false;
+    const cleanup = () => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      bgVideo.removeEventListener('seeked', onSeeked);
+      resolve(runId === undefined || runId === decodeRunId);
+    };
+    const onSeeked = cleanup;
+    const timer = setTimeout(cleanup, IS_MOBILE ? 700 : 1200);
     bgVideo.addEventListener('seeked', onSeeked);
-    try { bgVideo.currentTime = t; } catch(e) { resolve(); }
+    try { bgVideo.currentTime = t; } catch(e) { cleanup(); }
   });
 }
 
@@ -1743,8 +1760,49 @@ function showBackgroundReady() {
   loader.classList.add('hidden');
 }
 
+function disposeFrames() {
+  while (frames.length) {
+    const frame = frames.pop();
+    frame?.close?.();
+  }
+}
+
+function bindNativeVideoListeners() {
+  if (nativeVideoListenersBound) return;
+  nativeVideoListenersBound = true;
+  bgVideo.addEventListener('loadeddata', showBackgroundReady);
+  bgVideo.addEventListener('playing', showBackgroundReady);
+}
+
+function enableNativeVideoMode(reason = 'unknown') {
+  if (bgMode === 'native') return;
+  console.warn('Switching background to native video mode:', reason);
+  bgMode = 'native';
+  decodeRunId++;
+  disposeFrames();
+  lastIdx = -1;
+  bg.classList.add('native-video');
+  bgVideo.muted = true;
+  bgVideo.defaultMuted = true;
+  bgVideo.loop = true;
+  bgVideo.playsInline = true;
+  bgVideo.setAttribute('muted', '');
+  bgVideo.setAttribute('autoplay', '');
+  bgVideo.setAttribute('loop', '');
+  bgVideo.setAttribute('playsinline', '');
+  bgVideo.setAttribute('webkit-playsinline', '');
+  bindNativeVideoListeners();
+  bgVideo.load();
+  bgVideo.play().catch(err => {
+    console.warn('Native background autoplay failed:', err);
+    loader.classList.add('hidden');
+  });
+}
+
 /* Pre-decodifica los frames a ImageBitmaps */
-async function preDecode() {
+async function preDecode(runId) {
+  if (!SUPPORTS_IMAGE_BITMAP) throw new Error('createImageBitmap no disponible');
+
   /* Espera a que el video tenga dimensiones y duración */
   if (!bgVideo.videoWidth || !bgVideo.duration) {
     await new Promise(resolve => {
@@ -1755,6 +1813,7 @@ async function preDecode() {
       check();
     });
   }
+  if (runId !== decodeRunId || bgMode !== 'scroll') return false;
 
   /* Calcula tamaño objetivo de las bitmaps */
   const srcW = bgVideo.videoWidth, srcH = bgVideo.videoHeight;
@@ -1772,8 +1831,10 @@ async function preDecode() {
   /* Decodifica cada frame */
   const total = bgVideo.duration - 0.04;
   for (let i = 0; i < FRAME_COUNT; i++) {
+    if (runId !== decodeRunId || bgMode !== 'scroll') return false;
     const t = (i / (FRAME_COUNT - 1)) * total;
-    await seekTo(t);
+    const stillActive = await seekTo(t, runId);
+    if (!stillActive || runId !== decodeRunId || bgMode !== 'scroll') return false;
     let bmp;
     try {
       bmp = useResize
@@ -1786,51 +1847,54 @@ async function preDecode() {
       tmp.getContext('2d').drawImage(bgVideo, 0, 0, bmpW, bmpH);
       bmp = await createImageBitmap(tmp);
     }
+    if (runId !== decodeRunId || bgMode !== 'scroll') {
+      bmp?.close?.();
+      return false;
+    }
     frames[i] = bmp;
     loaderMsg.textContent = `Preparando la revelación… ${Math.round((i+1)/FRAME_COUNT*100)}%`;
   }
 
+  if (runId !== decodeRunId || bgMode !== 'scroll') return false;
   showBackgroundReady();
   lastIdx = -1;
   drawForScroll();
+  return true;
 }
 
-/* En móvil usamos reproducción nativa inline: iOS/Android toleran mucho mejor
-   esto que el scrubbing intensivo con currentTime + createImageBitmap. */
-if (USE_NATIVE_MOBILE_VIDEO) {
-  bg.classList.add('native-video');
-  bgVideo.muted = true;
-  bgVideo.defaultMuted = true;
-  bgVideo.loop = true;
-  bgVideo.playsInline = true;
-  bgVideo.setAttribute('muted', '');
-  bgVideo.setAttribute('autoplay', '');
-  bgVideo.setAttribute('loop', '');
-  bgVideo.setAttribute('playsinline', '');
-  bgVideo.setAttribute('webkit-playsinline', '');
+async function startScrollVideoMode() {
+  bgMode = 'scroll';
+  decodeRunId++;
+  loaderMsg.textContent = IS_MOBILE
+    ? 'Preparando video interactivo…'
+    : 'Preparando la revelación…';
 
-  bgVideo.addEventListener('loadeddata', showBackgroundReady, { once: true });
-  bgVideo.addEventListener('playing', showBackgroundReady, { once: true });
+  const runId = decodeRunId;
+  const bootPromise = preDecode(runId);
+  const guardedBoot = IS_MOBILE
+    ? Promise.race([
+        bootPromise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('mobile-scroll-timeout')), MOBILE_SCROLL_BOOT_TIMEOUT))
+      ])
+    : bootPromise;
 
-  const startNativeVideo = async () => {
-    try {
-      await bgVideo.play();
-    } catch (err) {
-      console.warn('Native background autoplay failed:', err);
-    }
-  };
-
-  bgVideo.load();
-  startNativeVideo();
-} else {
-  /* Inicia el pre-decode cuando hay metadata */
-  if (bgVideo.readyState >= 1) {
-    preDecode().catch(err => { console.error(err); loader.classList.add('hidden'); });
-  } else {
-    bgVideo.addEventListener('loadedmetadata', () => {
-      preDecode().catch(err => { console.error(err); loader.classList.add('hidden'); });
-    }, {once:true});
+  try {
+    await guardedBoot;
+  } catch (err) {
+    console.warn('Scroll background boot failed:', err);
+    enableNativeVideoMode(err?.message || 'scroll-boot-failed');
   }
+}
+
+if (SHOULD_TRY_SCROLL_VIDEO) {
+  if (bgVideo.readyState >= 1) {
+    startScrollVideoMode();
+  } else {
+    bgVideo.addEventListener('loadedmetadata', startScrollVideoMode, { once:true });
+    bgVideo.load();
+  }
+} else {
+  enableNativeVideoMode('mobile-browser-fallback');
 }
 
 /* Fallback si el video no carga en 10s */
