@@ -1,0 +1,1806 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alexander &amp; María — ¿Niño o Niña?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Fredoka:wght@400;500;600;700&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+<style>
+:root{
+  --blue-hi:#9FD8F5;--blue:#4DA9E8;--blue-mid:#2A78C2;--blue-deep:#0E2A52;
+  --yellow:#FFD93B;--gold:#E89800;
+  --lilac:#B69BE0;--lilac-mid:#8E6FCD;--lilac-deep:#5A3F8C;
+  --rose:#F4B5C4;--cream:#FFF6DC;--paper:#FAF6E8;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'Fredoka',system-ui,sans-serif;color:#fff;background:#0a1228;overflow-x:hidden;}
+
+/* ===== FONDO FIJO CON PARALLAX ===== */
+.bg{position:fixed;inset:0;z-index:0;overflow:hidden;}
+.bg .fallback{
+  position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 10%,rgba(255,217,59,.12) 0%,transparent 60%),
+    radial-gradient(ellipse 70% 50% at 80% 90%,rgba(110,85,168,.4) 0%,transparent 60%),
+    linear-gradient(155deg,#1B2455 0%,#3B3A8E 35%,#2A6FBC 75%,#1E5A9C 100%);
+  transition:opacity .5s;
+}
+/* Video oculto: solo se usa para pre-decodificar frames */
+.bg video{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;visibility:hidden;pointer-events:none;
+  opacity:0;
+}
+/* Canvas: pinta los frames pre-decodificados (scroll perfectamente fluido) */
+.bg canvas{
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  display:block;opacity:0;
+  transition:opacity .5s ease;
+  pointer-events:none;
+}
+.bg.ready canvas{opacity:1;}
+.bg.ready .fallback{opacity:0;}
+.bg .vignette{
+  position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse at center,transparent 35%,rgba(10,18,40,.55) 100%),
+    linear-gradient(180deg,rgba(10,18,40,.45) 0%,rgba(10,18,40,.1) 25%,rgba(10,18,40,.1) 75%,rgba(10,18,40,.65) 100%);
+}
+
+/* ===== STICKERS FLOTANTES ===== */
+.stickers{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+.sticker{position:absolute;animation:bob var(--dur,7s) ease-in-out infinite;animation-delay:var(--delay,0s);filter:drop-shadow(0 14px 18px rgba(0,0,0,.4));opacity:.92;}
+@keyframes bob{0%,100%{transform:translate(0,0) rotate(var(--r,0deg));}50%{transform:translate(var(--dx,12px),var(--dy,-20px)) rotate(calc(var(--r,0deg) + 8deg));}}
+
+/* ===== BARRA DE PROGRESO ===== */
+.progress{position:fixed;top:0;left:0;height:5px;width:0%;background:linear-gradient(90deg,var(--yellow),var(--lilac),var(--blue));z-index:100;box-shadow:0 0 10px rgba(255,217,59,.6);}
+
+/* ===== HUD ===== */
+.hud{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;justify-content:space-between;align-items:center;padding:18px 28px;pointer-events:none;}
+.hud>*{pointer-events:auto;}
+.brand{font-family:'Lilita One',cursive;font-size:22px;color:#fff;text-shadow:0 2px 0 var(--blue-deep),0 4px 0 var(--blue-deep),0 6px 12px rgba(0,0,0,.6);-webkit-text-stroke:2px var(--blue-deep);paint-order:stroke fill;letter-spacing:1px;line-height:1;}
+.brand small{display:block;font-family:'Fredoka';font-size:10px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--yellow);-webkit-text-stroke:0;text-shadow:0 1px 2px rgba(0,0,0,.5);margin-top:4px;}
+.pill{background:rgba(14,21,48,.55);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);padding:8px 16px;border-radius:999px;font-weight:600;font-size:12px;color:#fff;border:1.5px solid rgba(255,255,255,.2);display:inline-flex;align-items:center;gap:8px;letter-spacing:1px;text-transform:uppercase;}
+.pill .dot{width:8px;height:8px;border-radius:50%;background:var(--yellow);box-shadow:0 0 10px var(--yellow);animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:.5;transform:scale(1);}50%{opacity:1;transform:scale(1.4);}}
+
+/* ===== SECCIONES ===== */
+.container{position:relative;z-index:2;}
+section{position:relative;min-height:100vh;padding:90px 5vw 60px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
+
+.reveal{opacity:0;transform:translateY(40px) scale(.96);transition:opacity .9s cubic-bezier(.2,.7,.2,1),transform .9s cubic-bezier(.2,.7,.2,1);}
+.reveal.in{opacity:1;transform:none;}
+.reveal.delay-1{transition-delay:.12s;}.reveal.delay-2{transition-delay:.24s;}.reveal.delay-3{transition-delay:.36s;}.reveal.delay-4{transition-delay:.48s;}.reveal.delay-5{transition-delay:.6s;}
+
+/* ===== EPIC-DESIGN: animaciones cinemáticas (estilo Apple/inmersivo) ===== */
+/* Letras/palabras que entran con stagger 3D al revelar */
+.split-text{display:inline-block;perspective:600px;}
+.split-text .word{display:inline-block;margin-right:.22em;perspective:400px;}
+.split-text .char{
+  display:inline-block;opacity:0;
+  transform:translateY(35px) rotateX(-70deg);
+  transition:opacity .55s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.34,1.56,.64,1);
+  transition-delay:calc(var(--i,0) * 35ms);
+  transform-origin:center bottom;
+  will-change:transform,opacity;
+}
+.reveal.in .split-text .char{opacity:1;transform:none;}
+
+/* Brillo pulsante para palabras-clave */
+.glow-pulse{animation:glowPulse 3.5s ease-in-out infinite;display:inline-block;}
+@keyframes glowPulse{
+  0%,100%{filter:drop-shadow(0 0 6px rgba(255,217,59,.4));}
+  50%{filter:drop-shadow(0 0 18px rgba(255,217,59,.85)) drop-shadow(0 0 32px rgba(255,217,59,.4));}
+}
+
+/* Stickers con parallax sutil controlado por JS */
+.sticker{will-change:transform;}
+
+/* "Respiro" sutil sobre títulos cuando están en viewport */
+.section-title.alive{animation:titleBreath 5s ease-in-out infinite 1.2s;}
+@keyframes titleBreath{
+  0%,100%{transform:translateY(0) scale(1);}
+  50%{transform:translateY(-3px) scale(1.015);}
+}
+
+/* ===== TÍTULO SVG ===== */
+.title-svg{width:min(880px,92vw);height:auto;margin:8px 0;display:block;filter:drop-shadow(0 22px 30px rgba(0,0,0,.6));}
+.title-svg text{font-family:'Lilita One',Impact,sans-serif !important;font-weight:400;}
+.eyebrow{font-family:'Caveat',cursive;font-size:clamp(28px,3.4vw,44px);font-weight:700;color:var(--yellow);transform:rotate(-3deg);text-shadow:0 3px 0 var(--blue-deep),0 6px 16px rgba(0,0,0,.6);-webkit-text-stroke:1.5px var(--blue-deep);paint-order:stroke fill;line-height:1;}
+.tagline{margin-top:14px;background:var(--blue-deep);color:#fff;padding:12px 26px;border-radius:99px;font-family:'Lilita One',cursive;letter-spacing:1.5px;font-size:clamp(14px,1.4vw,17px);text-transform:uppercase;box-shadow:0 8px 20px -8px rgba(0,0,0,.6),inset 0 -3px 0 rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.18);transform:rotate(-1deg);white-space:nowrap;}
+.tagline .em{color:var(--yellow);margin:0 6px;}
+.names{display:flex;align-items:center;justify-content:center;gap:24px;margin:30px 0 18px;font-family:'Caveat',cursive;font-size:clamp(40px,5vw,72px);line-height:1;}
+.names .n{color:#fff;font-weight:700;text-shadow:0 4px 0 var(--blue-deep),0 8px 24px rgba(0,0,0,.6);-webkit-text-stroke:2px var(--blue-deep);paint-order:stroke fill;}
+.names .n.a{transform:rotate(-2deg);}.names .n.b{transform:rotate(2deg);}
+.names .amp{color:var(--yellow);font-family:'Lilita One',cursive;font-size:.7em;-webkit-text-stroke:2px var(--blue-deep);paint-order:stroke fill;text-shadow:0 4px 0 var(--blue-deep);}
+.scroll-cue{position:absolute;bottom:36px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:10px;color:#fff;opacity:.85;font-family:'Lilita One',cursive;font-size:12px;letter-spacing:2px;text-transform:uppercase;text-shadow:0 2px 8px rgba(0,0,0,.6);}
+.scroll-cue .arrow{width:32px;height:32px;border:3px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;animation:bounce 1.8s ease-in-out infinite;}
+.scroll-cue .arrow svg{width:18px;height:18px;}
+@keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(8px);}}
+
+/* ===== TARJETA DE INVITACIÓN ===== */
+.invite{background:var(--paper);color:var(--blue-deep);border:4px solid var(--blue-deep);border-radius:32px;padding:36px 44px 32px;max-width:min(680px,92vw);box-shadow:0 10px 0 var(--blue-deep),0 30px 60px -10px rgba(0,0,0,.5);position:relative;transform:rotate(-1deg);}
+.invite::before{content:'';position:absolute;inset:10px;border:2.5px dashed rgba(14,42,82,.25);border-radius:24px;pointer-events:none;}
+.invite .kicker{font-family:'Lilita One',cursive;font-size:13px;letter-spacing:3px;text-transform:uppercase;color:var(--blue-mid);margin-bottom:8px;}
+.invite .stamp{position:absolute;top:-26px;right:-26px;width:120px;height:120px;background:var(--yellow);border:4px solid var(--blue-deep);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;transform:rotate(12deg);box-shadow:0 6px 0 var(--blue-deep);font-family:'Lilita One',cursive;color:var(--blue-deep);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;text-align:center;line-height:1.1;padding:8px;}
+.invite .stamp big{font-size:30px;line-height:1;display:block;margin:2px 0;}
+.invite h2{font-family:'Lilita One',cursive;font-size:clamp(36px,4.5vw,60px);line-height:1.05;margin:6px 0 14px;color:var(--blue-deep);}
+.invite .date-block{display:grid;grid-template-columns:auto auto auto auto auto;gap:14px;justify-content:center;align-items:center;margin:16px 0 8px;}
+.invite .date-block .num{font-family:'Lilita One',cursive;font-size:clamp(42px,5.5vw,72px);color:var(--blue-deep);line-height:1;padding:0 12px;}
+.invite .date-block .lbl{font-family:'Fredoka';font-weight:600;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--blue-mid);margin-top:4px;text-align:center;}
+.invite .date-block .sep{width:6px;height:6px;border-radius:50%;background:var(--lilac);}
+.invite .when{font-family:'Caveat',cursive;font-size:clamp(26px,2.8vw,36px);font-weight:700;color:var(--lilac-deep);margin-top:14px;}
+.invite .where{font-family:'Fredoka';font-weight:500;font-size:14px;color:var(--blue-mid);margin-top:6px;}
+
+/* ===== TÍTULOS DE SECCIÓN ===== */
+.section-title{font-family:'Lilita One',cursive;font-size:clamp(40px,5.5vw,76px);line-height:1;margin-bottom:8px;color:#fff;-webkit-text-stroke:3px var(--blue-deep);paint-order:stroke fill;text-shadow:0 6px 0 var(--blue-deep),0 12px 24px rgba(0,0,0,.55);letter-spacing:1px;text-transform:uppercase;}
+.section-sub{font-family:'Caveat',cursive;font-size:clamp(22px,2.4vw,32px);color:var(--yellow);font-weight:700;text-shadow:0 3px 0 var(--blue-deep),0 6px 12px rgba(0,0,0,.5);-webkit-text-stroke:1px var(--blue-deep);paint-order:stroke fill;margin-bottom:24px;}
+
+/* ===== MALETÍN ===== */
+.case-stage{position:relative;width:min(560px,90vw);aspect-ratio:1.05/1;perspective:1400px;transform-style:preserve-3d;}
+.case-stage svg{width:100%;height:100%;overflow:visible;}
+.case-svg{cursor:pointer;filter:drop-shadow(0 30px 36px rgba(0,0,0,.55));}
+.case-top{transform-origin:50% 62%;transition:transform 1s cubic-bezier(.34,1.56,.64,1);}
+.case-stage.open .case-top{transform:rotateX(-110deg) translateY(-8px);}
+.case-handle{transform-origin:center 100%;transition:transform .8s cubic-bezier(.34,1.56,.64,1);}
+.case-stage.open .case-handle{transform:translateY(-6px) rotate(-2deg);}
+.case-lock{transform-origin:center;transition:transform .6s cubic-bezier(.34,1.56,.64,1);}
+.case-stage.open .case-lock{transform:translateY(-4px) rotate(-12deg);}
+.case-stage .click-hint{position:absolute;bottom:-40px;left:50%;transform:translateX(-50%);font-family:'Lilita One',cursive;font-size:14px;letter-spacing:2px;text-transform:uppercase;color:var(--yellow);background:var(--blue-deep);padding:10px 20px;border-radius:99px;border:2px solid var(--yellow);box-shadow:0 6px 0 rgba(0,0,0,.4);white-space:nowrap;animation:bounceSlow 2s ease-in-out infinite;}
+@keyframes bounceSlow{0%,100%{transform:translateX(-50%) translateY(0);}50%{transform:translateX(-50%) translateY(-8px);}}
+.case-stage.open .click-hint{display:none;}
+.docs-wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:18px;pointer-events:none;}
+.doc{position:absolute;width:38%;aspect-ratio:.72/1;border-radius:14px;border:4px solid var(--blue-deep);background:var(--paper);box-shadow:0 14px 0 var(--blue-deep),0 26px 50px -8px rgba(0,0,0,.55);transform:translateY(20%) scale(.2) rotate(0);opacity:0;transition:transform .9s cubic-bezier(.34,1.56,.64,1),opacity .5s;cursor:pointer;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px;pointer-events:none;}
+.doc::before{content:'';position:absolute;inset:8px;border:2px dashed rgba(14,42,82,.25);border-radius:8px;}
+.doc.boy{background:linear-gradient(160deg,#E8F4FE 0%,#C6E2F9 60%,#9FCBED 100%);--side-color:var(--blue);--side-deep:var(--blue-mid);}
+.doc.girl{background:linear-gradient(160deg,#F4EAFC 0%,#DCC4F2 60%,#B69BE0 100%);--side-color:var(--lilac);--side-deep:var(--lilac-deep);}
+.case-stage.open .doc.boy{transform:translate(-58%,-28%) scale(1) rotate(-7deg);opacity:1;pointer-events:auto;transition-delay:.55s;}
+.case-stage.open .doc.girl{transform:translate(58%,-28%) scale(1) rotate(7deg);opacity:1;pointer-events:auto;transition-delay:.7s;}
+.doc:hover{transform:translate(var(--tx,0),var(--ty,-28%)) scale(1.05) rotate(0) !important;box-shadow:0 18px 0 var(--blue-deep),0 30px 60px -4px rgba(0,0,0,.6);}
+.doc.boy:hover{--tx:-58%;}.doc.girl:hover{--tx:58%;}
+.doc .clip{position:absolute;top:-14px;width:46%;height:22px;background:#9aa1b4;border:3px solid var(--blue-deep);border-radius:6px;box-shadow:0 3px 0 var(--blue-deep);}
+.doc .ribbon{position:absolute;top:10px;right:-10px;background:var(--yellow);color:var(--blue-deep);font-family:'Lilita One',cursive;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding:4px 10px;border:2px solid var(--blue-deep);border-radius:4px;transform:rotate(8deg);box-shadow:0 2px 0 var(--blue-deep);}
+.doc .hd{font-family:'Lilita One',cursive;font-size:14px;letter-spacing:2px;text-transform:uppercase;color:var(--blue-deep);opacity:.7;margin-top:4px;}
+.doc .big-label{font-family:'Lilita One',cursive;font-size:clamp(36px,4.5vw,64px);line-height:1;margin:6px 0 4px;color:var(--side-deep);-webkit-text-stroke:3px var(--blue-deep);paint-order:stroke fill;}
+.doc .emoji{font-size:42px;line-height:1;margin:6px 0;}
+.doc .stripe{margin-top:8px;width:80%;height:10px;border-radius:999px;background:var(--side-color);border:2px solid var(--blue-deep);box-shadow:0 3px 0 var(--blue-deep);}
+.doc .fineprint{margin-top:auto;font-family:'Fredoka';font-weight:500;font-size:11px;color:var(--blue-deep);opacity:.65;letter-spacing:.5px;text-align:center;line-height:1.3;}
+.doc .fineprint b{font-weight:700;text-transform:uppercase;letter-spacing:1.5px;}
+.doc .stamp-vote{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:var(--side-deep);color:#fff;font-family:'Lilita One',cursive;font-size:13px;letter-spacing:2px;text-transform:uppercase;padding:8px 16px;border-radius:99px;border:2px solid var(--blue-deep);box-shadow:0 4px 0 var(--blue-deep);white-space:nowrap;}
+.doc .stamp-vote::after{content:' →';}
+
+/* ===== RESULTADO DE VOTO ===== */
+.vote-result{position:relative;margin:0 auto;width:min(680px,92vw);background:var(--paper);border:5px solid var(--blue-deep);border-radius:28px;padding:36px 32px;box-shadow:0 12px 0 var(--blue-deep),0 30px 60px -10px rgba(0,0,0,.55);color:var(--blue-deep);text-align:center;display:none;}
+body.voted-boy .vote-result.boy,body.voted-girl .vote-result.girl{display:block;animation:popIn .8s cubic-bezier(.34,1.56,.64,1);}
+@keyframes popIn{from{opacity:0;transform:scale(.7) translateY(40px);}to{opacity:1;transform:none;}}
+.vote-result .crown{font-family:'Lilita One',cursive;font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--blue-mid);margin-bottom:4px;}
+.vote-result h3{font-family:'Lilita One',cursive;font-size:clamp(40px,5.5vw,72px);line-height:1;margin:6px 0 12px;}
+.vote-result.boy h3{color:var(--blue-mid);}.vote-result.girl h3{color:var(--lilac-deep);}
+.vote-result .dress{margin-top:16px;background:var(--blue-deep);color:#fff;border-radius:22px;padding:22px;display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center;text-align:left;}
+.vote-result .dress .swatch{width:84px;height:84px;border-radius:18px;border:4px solid #fff;box-shadow:inset 0 -6px 0 rgba(0,0,0,.18),0 6px 0 rgba(0,0,0,.35);}
+.vote-result.boy .dress .swatch{background:linear-gradient(155deg,#7BC4F0 0%,var(--blue) 60%,var(--blue-mid) 100%);}
+.vote-result.girl .dress .swatch{background:linear-gradient(155deg,#D4B5E8 0%,var(--lilac) 60%,var(--lilac-deep) 100%);}
+.vote-result .dress .text strong{display:block;font-family:'Lilita One',cursive;font-size:14px;letter-spacing:2px;text-transform:uppercase;color:var(--yellow);margin-bottom:4px;}
+.vote-result .dress .text p{font-family:'Fredoka';font-weight:500;font-size:15px;line-height:1.4;color:#fff;}
+.vote-result .dress .text p b{color:var(--yellow);}
+.vote-result .change{margin-top:14px;background:transparent;border:none;font-family:'Caveat',cursive;font-size:18px;font-weight:700;color:var(--blue-mid);opacity:.7;cursor:pointer;}
+.vote-result .change:hover{opacity:1;}
+
+/* ===== CONTEO ===== */
+.tally-row{display:grid;grid-template-columns:1fr 1fr;gap:18px;width:min(640px,92vw);margin-top:20px;}
+.tally-card{background:rgba(14,21,48,.6);backdrop-filter:blur(14px);border:3px solid #fff;border-radius:22px;padding:18px 20px;color:#fff;box-shadow:0 8px 0 rgba(0,0,0,.3);}
+.tally-card.boy{border-color:var(--blue);}.tally-card.girl{border-color:var(--lilac);}
+.tally-card .lbl{font-family:'Lilita One',cursive;font-size:14px;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;}
+.tally-card .lbl.boy{color:var(--blue-hi);}.tally-card .lbl.girl{color:var(--lilac);}
+.tally-card .big{font-family:'Lilita One',cursive;font-size:48px;line-height:1;color:#fff;font-variant-numeric:tabular-nums;}
+.tally-card .pct{font-family:'Fredoka';font-weight:600;font-size:14px;opacity:.7;margin-left:8px;}
+.tally-card .bar{margin-top:10px;height:10px;width:100%;background:rgba(255,255,255,.15);border-radius:99px;overflow:hidden;}
+.tally-card .fill{height:100%;width:0%;border-radius:99px;transition:width 1s cubic-bezier(.34,1.56,.64,1);}
+.tally-card.boy .fill{background:linear-gradient(90deg,var(--blue-hi),var(--blue));}
+.tally-card.girl .fill{background:linear-gradient(90deg,var(--lilac),var(--lilac-deep));}
+
+/* ===== CUENTA REGRESIVA ===== */
+.countdown-grid{display:grid;grid-template-columns:repeat(4,minmax(80px,1fr));gap:14px;width:min(640px,92vw);margin-top:24px;}
+.cd-cell{background:var(--blue-deep);border:3px solid #fff;border-radius:18px;padding:18px 12px;box-shadow:0 6px 0 rgba(0,0,0,.35);text-align:center;}
+.cd-cell .num{display:block;font-family:'Lilita One',cursive;font-size:clamp(36px,4.5vw,56px);color:var(--yellow);font-variant-numeric:tabular-nums;line-height:1;}
+.cd-cell .lbl{font-family:'Fredoka';font-weight:600;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#fff;opacity:.7;margin-top:4px;display:block;}
+.signoff{margin-top:34px;font-family:'Caveat',cursive;font-size:clamp(22px,2.6vw,32px);color:var(--yellow);transform:rotate(-2deg);text-shadow:0 3px 0 var(--blue-deep),0 6px 14px rgba(0,0,0,.5);}
+
+/* ===== GALERÍA - MÓVIL DE CUNA ===== */
+.gallery-section{padding-top:60px;}
+.upload-btn{
+  display:inline-flex;align-items:center;gap:10px;
+  background:var(--yellow);color:var(--blue-deep);
+  font-family:'Lilita One',cursive;font-size:16px;letter-spacing:1.5px;text-transform:uppercase;
+  padding:14px 28px;border:3px solid var(--blue-deep);border-radius:99px;
+  box-shadow:0 6px 0 var(--blue-deep),0 14px 28px -6px rgba(0,0,0,.5);
+  cursor:pointer;transition:transform .15s ease, box-shadow .15s ease;
+  margin-bottom:18px;position:relative;overflow:hidden;
+}
+.upload-btn:hover{transform:translateY(-2px);box-shadow:0 8px 0 var(--blue-deep),0 18px 32px -6px rgba(0,0,0,.55);}
+.upload-btn:active{transform:translateY(2px);box-shadow:0 4px 0 var(--blue-deep),0 8px 16px -4px rgba(0,0,0,.5);}
+.upload-btn input{display:none;}
+.upload-btn.uploading{pointer-events:none;opacity:.7;}
+.upload-btn .progress-fill{position:absolute;left:0;top:0;bottom:0;background:rgba(255,255,255,.4);width:0%;transition:width .2s ease;pointer-events:none;}
+
+/* Móvil colgante de cuna */
+.crib-mobile{
+  position:relative;
+  width:100%;max-width:900px;
+  height:580px;
+  perspective:1800px;
+  perspective-origin:center 30%;
+  margin:10px auto 0;
+  cursor:grab;
+  touch-action:pan-y;
+  user-select:none;-webkit-user-select:none;
+  overflow:visible;
+}
+.crib-mobile.dragging{cursor:grabbing;}
+
+/* Argolla superior de donde "cuelga" todo */
+.crib-hoop{
+  position:absolute;
+  top:22px;left:50%;
+  transform:translateX(-50%);
+  width:88px;height:28px;
+  background:radial-gradient(ellipse at 35% 30%,#FFE57A 0%,var(--gold) 55%,#8C5800 100%);
+  border:3px solid var(--blue-deep);
+  border-radius:50%/55%;
+  box-shadow:0 6px 0 var(--blue-deep),0 14px 22px rgba(0,0,0,.55),inset 0 -4px 0 rgba(0,0,0,.25);
+  z-index:10;
+}
+.crib-hoop::before{
+  /* Hueco interior del aro (donde se anudan las cuerdas) */
+  content:'';position:absolute;inset:6px 18px;
+  background:radial-gradient(ellipse,rgba(14,21,48,.7) 0%,rgba(14,21,48,.3) 70%,transparent 100%);
+  border:2px solid var(--blue-deep);
+  border-radius:50%;
+}
+.crib-hoop::after{
+  /* Cuerda principal al techo */
+  content:'';position:absolute;top:-40px;left:50%;
+  transform:translateX(-50%);
+  width:3px;height:42px;
+  background:linear-gradient(to bottom,rgba(255,255,255,.35),rgba(255,255,255,.7));
+  box-shadow:0 0 0 .5px rgba(0,0,0,.15);
+}
+
+/* Plato giratorio en 3D */
+.crib-wheel{
+  position:absolute;top:0;left:0;right:0;bottom:0;
+  transform-style:preserve-3d;
+  will-change:transform;
+}
+
+/* Cada postal colgante */
+.m-item{
+  position:absolute;
+  top:180px;left:50%;
+  transform-style:preserve-3d;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+
+/* Cuerda larga que sale del centro del aro y va a cada postal (cono).
+   Cada cuerda se posiciona como elemento SEPARADO dentro del wheel, no dentro de m-item. */
+.hang-string{
+  position:absolute;
+  left:50%;top:34px;          /* origen en el centro del aro */
+  width:2.5px;
+  height:var(--str-len,180px);
+  margin-left:-1.25px;
+  background:linear-gradient(to bottom,rgba(255,255,255,.45) 0%,rgba(255,255,255,.85) 80%,rgba(255,255,255,1) 100%);
+  transform-origin:top center;
+  transform:rotateY(var(--str-angle,0deg)) rotateX(var(--str-tilt,45deg));
+  pointer-events:none;
+  z-index:1;
+}
+.hang-string::after{
+  /* Nudo donde la cuerda se ata a la postal */
+  content:'';position:absolute;bottom:-2px;left:50%;
+  transform:translateX(-50%);
+  width:7px;height:7px;border-radius:50%;
+  background:var(--blue-deep);
+  box-shadow:0 0 0 1.5px var(--yellow);
+}
+
+/* Polaroid con dos caras (frente con foto, dorso en blanco) */
+.polaroid{
+  position:relative;
+  transform-style:preserve-3d;
+  -webkit-transform-style:preserve-3d;
+  transform:rotate(var(--tilt,0deg));
+  animation:hangBob 3.5s ease-in-out infinite;
+  animation-delay:var(--bob-delay,0s);
+  /* IMPORTANTE: NO usar filter/opacity/mask aquí — anulan preserve-3d
+     y rompen backface-visibility de los hijos. Usamos box-shadow. */
+}
+.polaroid .face{
+  border:3.5px solid var(--blue-deep);
+  border-radius:8px;
+  background:var(--cream);
+  box-shadow:0 5px 0 var(--blue-deep),0 14px 30px -4px rgba(0,0,0,.55);
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+}
+.polaroid .face.front{
+  padding:9px 9px 26px;
+  position:relative;
+}
+.polaroid .face.back{
+  position:absolute;top:0;left:0;
+  width:100%;height:100%;
+  transform:rotateY(180deg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:18px;text-align:center;
+  /* Textura sutil de papel */
+  background:
+    repeating-linear-gradient(135deg,rgba(14,42,82,.025) 0 1px,transparent 1px 6px),
+    var(--cream);
+}
+.polaroid .face.back .monogram{
+  font-family:'Lilita One',cursive;
+  font-size:28px;color:var(--blue-deep);
+  letter-spacing:2px;line-height:1;
+  margin-bottom:6px;
+}
+.polaroid .face.back .stamp{
+  width:50px;height:50px;border-radius:50%;
+  border:2.5px dashed var(--lilac);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Caveat',cursive;font-weight:700;font-size:14px;
+  color:var(--lilac-deep);
+  margin:6px 0;
+  transform:rotate(-8deg);
+}
+.polaroid .face.back .back-note{
+  font-family:'Caveat',cursive;font-weight:700;
+  font-size:13px;color:var(--blue-mid);
+  margin-top:4px;
+}
+@keyframes hangBob{
+  0%,100%{transform:rotate(calc(var(--tilt,0deg) - 1deg));}
+  50%{transform:rotate(calc(var(--tilt,0deg) + 1deg));}
+}
+.polaroid .face.front::before{
+  /* Cinta decorativa amarilla arriba */
+  content:'';position:absolute;
+  top:-7px;left:50%;
+  transform:translateX(-50%) rotate(var(--tape-rot,-4deg));
+  width:46px;height:14px;
+  background:linear-gradient(to bottom,#FFE57A,#F5B400);
+  border:1.5px solid var(--blue-deep);
+  border-radius:2px;
+  box-shadow:0 1.5px 0 var(--blue-deep);
+}
+.polaroid .face.front img{
+  display:block;width:100%;border-radius:4px;
+  background:rgba(14,21,48,.1);
+  pointer-events:none;
+}
+.polaroid.empty .face.front{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  width:200px;height:240px;
+  padding:18px;
+  font-family:'Caveat',cursive;font-weight:700;
+  font-size:18px;color:var(--blue-deep);text-align:center;
+  line-height:1.3;
+}
+.polaroid.empty .face.front .empty-icon{font-size:36px;margin-bottom:8px;}
+
+/* Tamaños distintos según orientación (interno, sin etiqueta visible) */
+.m-item.h{width:200px;margin-left:-100px;}
+.m-item.h .polaroid .face.front img{aspect-ratio:4/3;object-fit:cover;}
+.m-item.v{width:150px;margin-left:-75px;}
+.m-item.v .polaroid .face.front img{aspect-ratio:3/4;object-fit:cover;}
+
+.gallery-hint{
+  font-family:'Caveat',cursive;font-weight:700;
+  font-size:18px;color:rgba(255,255,255,.7);
+  text-shadow:0 2px 4px rgba(0,0,0,.5);
+  margin-top:-30px;text-align:center;
+}
+.gallery-hint.hidden{opacity:0;transition:opacity .5s;pointer-events:none;}
+
+/* ===== TRENCITO (SVG realista) ===== */
+.train-section{
+  width:100vw;
+  margin:50px -5vw 0;
+  position:relative;
+  overflow:hidden;
+  padding:30px 0 0;
+}
+.train-stage{position:relative;height:240px;}
+.train{
+  position:absolute;
+  bottom:32px;left:0;
+  display:flex;align-items:flex-end;gap:0;
+  animation:trainGo var(--train-dur,28s) linear infinite;
+  will-change:transform;
+  filter:drop-shadow(0 8px 12px rgba(0,0,0,.4));
+}
+.train.paused{animation-play-state:paused;}
+@keyframes trainGo{
+  from{transform:translateX(110vw);}
+  to{transform:translateX(-105%);}
+}
+
+.train .vehicle{
+  flex-shrink:0;display:block;
+  margin-right:-6px; /* leve solape para que parezcan enganchados */
+}
+
+/* Animación de las ruedas (rotación) */
+.wheel-spinner{
+  animation:wheelSpin 1.2s linear infinite;
+  transform-origin:center;transform-box:fill-box;
+}
+@keyframes wheelSpin{
+  from{transform:rotate(0deg);}
+  to{transform:rotate(360deg);}
+}
+
+/* Humo del tren (puffs) */
+.smoke-puff{
+  animation:smokeRise 2.4s ease-out infinite;
+  transform-origin:center;transform-box:fill-box;
+  opacity:0;
+}
+@keyframes smokeRise{
+  0%{opacity:0;transform:translate(0,0) scale(.4);}
+  15%{opacity:.85;}
+  100%{opacity:0;transform:translate(-10px,-50px) scale(1.7);}
+}
+
+/* Rieles */
+.rails{position:absolute;left:0;right:0;bottom:0;height:32px;pointer-events:none;}
+.rail{position:absolute;left:0;right:0;height:5px;
+  background:linear-gradient(180deg,#B8B8B8 0%,#5A5A5A 60%,#2A2A2A 100%);
+  border-top:1px solid #E0E0E0;border-bottom:2px solid var(--blue-deep);
+  box-shadow:0 2px 0 rgba(0,0,0,.3);
+}
+.rail-top{bottom:22px;}
+.rail-bot{bottom:10px;}
+.ties{
+  position:absolute;left:0;right:0;bottom:0;height:14px;
+  background-image:repeating-linear-gradient(90deg,#5C3F1C 0,#5C3F1C 24px,transparent 24px,transparent 50px);
+  border-bottom:2px solid var(--blue-deep);
+}
+.ties::after{
+  /* Pasto debajo */
+  content:'';position:absolute;left:0;right:0;top:100%;height:6px;
+  background:repeating-linear-gradient(90deg,#3E9659 0 3px,#6BC785 3px 6px);
+}
+
+/* Lightbox */
+.lightbox{
+  position:fixed;inset:0;z-index:300;
+  background:rgba(0,0,0,.94);
+  display:none;align-items:center;justify-content:center;
+  padding:20px;
+}
+.lightbox.open{display:flex;animation:fadeIn .25s ease;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+.lightbox img{max-width:100%;max-height:100%;object-fit:contain;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.7);}
+.lightbox .close-btn{
+  position:absolute;top:18px;right:18px;
+  width:48px;height:48px;border-radius:50%;
+  background:rgba(255,255,255,.15);border:2px solid #fff;
+  color:#fff;font-size:22px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+}
+
+/* ===== Loader inicial (mientras carga el video) ===== */
+.video-loader{
+  position:fixed;inset:0;z-index:200;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
+  background:linear-gradient(155deg,#1B2455 0%,#3B3A8E 35%,#2A6FBC 75%,#1E5A9C 100%);
+  transition:opacity .6s ease, visibility .6s ease;
+}
+.video-loader.hidden{opacity:0;visibility:hidden;pointer-events:none;}
+.video-loader .spin{
+  width:54px;height:54px;border:4px solid rgba(255,255,255,.2);border-top-color:var(--yellow);
+  border-radius:50%;animation:spin 1s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+.video-loader .msg{font-family:'Lilita One',cursive;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#fff;opacity:.8;}
+
+/* ===== MOBILE ===== */
+@media(max-width:720px){
+  .hud{padding:12px 14px;}
+  .brand{font-size:16px;-webkit-text-stroke-width:1.5px;}
+  .brand small{font-size:8px;letter-spacing:2px;margin-top:2px;}
+  .pill{font-size:10px;padding:6px 12px;letter-spacing:.5px;}
+  section{padding:80px 5vw 40px;}
+  .eyebrow{font-size:22px;}
+  .tagline{font-size:12px;padding:10px 18px;letter-spacing:1px;}
+  .names{gap:10px;margin:18px 0 14px;}
+  .names .n{-webkit-text-stroke-width:1.5px;}
+  .invite{padding:26px 18px 22px;}
+  .invite .stamp{width:80px;height:80px;top:-18px;right:-14px;border-width:3px;font-size:9px;}
+  .invite .stamp big{font-size:22px;}
+  .invite h2{font-size:28px;}
+  .invite .date-block{gap:4px;margin:12px 0 4px;}
+  .invite .date-block .num{padding:0 2px;font-size:32px;}
+  .invite .date-block .lbl{font-size:9px;letter-spacing:1px;}
+  .invite .when{font-size:20px;margin-top:10px;}
+  .invite .where{font-size:12px;}
+  .case-stage{width:96vw;}
+  .case-stage .click-hint{font-size:11px;padding:8px 14px;bottom:-30px;}
+  .doc .big-label{-webkit-text-stroke-width:2px;}
+  .doc .stamp-vote{font-size:10px;padding:6px 12px;letter-spacing:1px;bottom:8px;}
+  .doc .fineprint{font-size:9px;}
+  .doc .emoji{font-size:32px;}
+  .doc .ribbon{font-size:8px;padding:3px 8px;}
+  .vote-result{padding:28px 22px;border-width:4px;border-radius:22px;}
+  .vote-result .dress{grid-template-columns:1fr;text-align:center;padding:18px;}
+  .vote-result .dress .swatch{margin:0 auto;width:64px;height:64px;}
+  .vote-result h3{font-size:32px;}
+  .section-title{-webkit-text-stroke-width:2px;}
+  .tally-row{gap:10px;}
+  .tally-card{padding:14px 16px;border-width:2px;}
+  .tally-card .big{font-size:36px;}
+  .tally-card .lbl{font-size:11px;}
+  .countdown-grid{gap:8px;grid-template-columns:repeat(4,1fr);}
+  .cd-cell{padding:12px 4px;border-width:2px;border-radius:14px;}
+  .cd-cell .num{font-size:24px;}
+  .cd-cell .lbl{font-size:9px;letter-spacing:1px;}
+  .video-loader .spin{width:44px;height:44px;}
+  .video-loader .msg{font-size:11px;}
+  .upload-btn{font-size:13px;padding:12px 22px;border-width:2px;}
+  .crib-mobile{height:500px;perspective:1200px;}
+  .crib-hoop{width:68px;height:22px;border-width:2.5px;top:16px;}
+  .crib-hoop::after{top:-30px;height:32px;}
+  .m-item{top:160px;}
+  .m-item.h{width:150px;margin-left:-75px;}
+  .m-item.v{width:114px;margin-left:-57px;}
+  .polaroid .face{border-width:3px;border-radius:7px;}
+  .polaroid .face.front{padding:7px 7px 22px;}
+  .polaroid .face.front::before{width:38px;height:11px;}
+  .polaroid.empty .face.front{width:160px;height:200px;font-size:15px;}
+  .polaroid .face.back .monogram{font-size:22px;}
+  .polaroid .face.back .stamp{width:38px;height:38px;font-size:11px;}
+  .polaroid .face.back .back-note{font-size:11px;}
+  .gallery-hint{font-size:15px;}
+  .train-section{margin-top:30px;padding-top:20px;}
+  .train-stage{height:240px;}
+}
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<!-- Loader inicial -->
+<div class="video-loader" id="vLoader">
+  <div class="spin"></div>
+  <div class="msg" id="vLoaderMsg">Preparando la revelación…</div>
+</div>
+
+<!-- ============ FONDO ============ -->
+<div class="bg" id="bg">
+  <div class="fallback"></div>
+  <video id="bgVideo" src="vertical.MP4" muted playsinline preload="auto" disablepictureinpicture webkit-playsinline x5-playsinline crossorigin="anonymous"></video>
+  <canvas id="bgCanvas"></canvas>
+  <div class="stickers" aria-hidden="true">
+    <div class="sticker" style="top:5%;right:6%;width:64px;--r:8deg;--dur:6.5s;--delay:.4s;--dx:-10px;--dy:-16px;">
+      <svg viewBox="0 0 100 100"><path d="M50 6 L62 38 L96 40 L68 60 L78 94 L50 74 L22 94 L32 60 L4 40 L38 38 Z" fill="#FFD93B" stroke="#0E2A52" stroke-width="5" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="sticker" style="top:60%;right:5%;width:70px;--r:-12deg;--dur:8.5s;--delay:1.1s;--dx:14px;--dy:-22px;">
+      <svg viewBox="0 0 100 90"><path d="M50 86 C 22 64,4 46,14 22 C 22 4,44 6,50 24 C 56 6,78 4,86 22 C 96 46,78 64,50 86 Z" fill="#4DA9E8" stroke="#0E2A52" stroke-width="5" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="sticker" style="top:38%;right:2%;width:54px;--r:6deg;--dur:7s;--delay:1.6s;--dx:-12px;--dy:14px;">
+      <svg viewBox="0 0 100 90"><path d="M50 86 C 22 64,4 46,14 22 C 22 4,44 6,50 24 C 56 6,78 4,86 22 C 96 46,78 64,50 86 Z" fill="#B69BE0" stroke="#0E2A52" stroke-width="5" stroke-linejoin="round"/></svg>
+    </div>
+  </div>
+  <div class="vignette"></div>
+</div>
+
+<!-- ============ HUD ============ -->
+<div class="hud">
+  <div class="brand">ALEXANDER &amp; MARÍA<small>Revelación · 21 · Junio · 2026</small></div>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <div class="pill"><span class="dot"></span>Votación abierta</div>
+    <div class="pill" id="totalPill">0 votos</div>
+  </div>
+</div>
+
+<!-- ============ CONTENIDO ============ -->
+<main class="container">
+
+  <!-- SECCIÓN 1: HERO -->
+  <section id="sec-hero">
+    <div class="eyebrow reveal">¡Queremos contar con tu presencia!</div>
+
+    <svg class="title-svg reveal delay-1" viewBox="0 0 1100 480" preserveAspectRatio="xMidYMid meet" aria-label="¿Niño o Niña?">
+      <defs>
+        <linearGradient id="gFace" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#FFF3A8"/><stop offset=".08" stop-color="#FFD93B"/>
+          <stop offset=".15" stop-color="#FFC700"/><stop offset=".20" stop-color="#FFFFFF"/>
+          <stop offset=".28" stop-color="#D6EDFB"/><stop offset=".45" stop-color="#7AC8F2"/>
+          <stop offset=".70" stop-color="#4DA9E8"/><stop offset="1" stop-color="#2A78C2"/>
+        </linearGradient>
+        <linearGradient id="gYellow" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#FFF3A8"/><stop offset=".4" stop-color="#FFD93B"/>
+          <stop offset="1" stop-color="#E89800"/>
+        </linearGradient>
+        <linearGradient id="gLilac" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#FFF3A8"/><stop offset=".08" stop-color="#FFD93B"/>
+          <stop offset=".15" stop-color="#FFC700"/><stop offset=".20" stop-color="#FFFFFF"/>
+          <stop offset=".28" stop-color="#F2E6FA"/><stop offset=".45" stop-color="#D4B5E8"/>
+          <stop offset=".70" stop-color="#B69BE0"/><stop offset="1" stop-color="#7A5BB5"/>
+        </linearGradient>
+      </defs>
+      <g transform="translate(560 180) rotate(-3)">
+        <g text-anchor="middle">
+          <g font-size="190" fill="#0E2A52" stroke="#0E2A52" stroke-width="9" stroke-linejoin="round" paint-order="stroke">
+            <text x="4" y="5">¿NIÑO</text><text x="8" y="10">¿NIÑO</text><text x="12" y="15">¿NIÑO</text>
+            <text x="16" y="20">¿NIÑO</text><text x="20" y="25">¿NIÑO</text><text x="24" y="30">¿NIÑO</text>
+          </g>
+          <text font-size="190" x="0" y="0" fill="url(#gFace)" stroke="#0E2A52" stroke-width="9" stroke-linejoin="round" paint-order="stroke">¿NIÑO</text>
+        </g>
+      </g>
+      <g transform="translate(560 410)">
+        <g text-anchor="middle">
+          <g transform="translate(-370 -25) rotate(-4)">
+            <g font-size="130" fill="#0E2A52" stroke="#0E2A52" stroke-width="8" stroke-linejoin="round" paint-order="stroke">
+              <text x="4" y="5">O</text><text x="8" y="10">O</text><text x="12" y="15">O</text><text x="16" y="20">O</text>
+            </g>
+            <text font-size="130" x="0" y="0" fill="url(#gYellow)" stroke="#0E2A52" stroke-width="8" stroke-linejoin="round" paint-order="stroke">O</text>
+          </g>
+          <g transform="translate(70 0) rotate(2)">
+            <g font-size="190" fill="#0E2A52" stroke="#0E2A52" stroke-width="9" stroke-linejoin="round" paint-order="stroke">
+              <text x="4" y="5">NIÑA?</text><text x="8" y="10">NIÑA?</text><text x="12" y="15">NIÑA?</text>
+              <text x="16" y="20">NIÑA?</text><text x="20" y="25">NIÑA?</text><text x="24" y="30">NIÑA?</text>
+            </g>
+            <text font-size="190" x="0" y="0" fill="url(#gLilac)" stroke="#0E2A52" stroke-width="9" stroke-linejoin="round" paint-order="stroke">NIÑA?</text>
+          </g>
+        </g>
+      </g>
+    </svg>
+
+    <div class="names reveal delay-2">
+      <span class="n a">Alexander</span><span class="amp">&amp;</span><span class="n b">María</span>
+    </div>
+    <div class="tagline reveal delay-3"> cual <span class="em">★</span> sera <span class="em">★</span> tu voto</div>
+    <div class="scroll-cue reveal delay-5">
+      <span>Desliza</span>
+      <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+    </div>
+  </section>
+
+  <!-- SECCIÓN 2: INVITACIÓN -->
+  <section id="sec-invite">
+    <div class="section-title reveal">La gran revelacion</div>
+    <div class="section-sub reveal delay-1">guarda la fecha — el consejo te espera</div>
+    <div class="invite reveal delay-2">
+      <div class="stamp"><span>OFICIAL</span><big>21</big><span>JUN · 2026</span></div>
+      <div class="kicker">★ invitacion oficial ★</div>
+      <h2>¡Estás convocado!</h2>
+      <div class="date-block">
+        <div><div class="num">DOM</div><div class="lbl">Día</div></div>
+        <div class="sep"></div>
+        <div><div class="num">21</div><div class="lbl">Junio</div></div>
+        <div class="sep"></div>
+        <div><div class="num">2026</div><div class="lbl">Año</div></div>
+      </div>
+      <div class="when">Domingo · 21 de Junio · 2026</div>
+      <div class="where">Alexander &amp; María · Revelación oficial del nuevo integrante de nuestra familia</div>
+    </div>
+  </section>
+
+  <!-- SECCIÓN 3: MALETÍN / VOTO -->
+  <section id="sec-vote">
+    <div class="section-title reveal">Abre el maletín</div>
+    <div class="section-sub reveal delay-1">haz clic — Contamos con tu Voto</div>
+
+    <div id="voteArea" class="reveal delay-2" style="display:flex;justify-content:center;align-items:center;width:100%;">
+      <div class="case-stage" id="caseStage" role="button" tabindex="0" aria-label="Abrir maletín">
+        <svg class="case-svg" viewBox="0 0 600 540" aria-hidden="true">
+          <defs>
+            <linearGradient id="caseG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C9A064"/><stop offset=".5" stop-color="#A07840"/><stop offset="1" stop-color="#7A5828"/></linearGradient>
+            <linearGradient id="leatherTop" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D8B47A"/><stop offset="1" stop-color="#8C6630"/></linearGradient>
+            <linearGradient id="caseInner" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5C3F1C"/><stop offset="1" stop-color="#3A2810"/></linearGradient>
+            <linearGradient id="goldG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE57A"/><stop offset=".5" stop-color="#F5B400"/><stop offset="1" stop-color="#B27A00"/></linearGradient>
+          </defs>
+          <ellipse cx="300" cy="510" rx="220" ry="14" fill="#000" opacity=".35"/>
+          <g>
+            <rect x="80" y="200" width="440" height="300" rx="22" fill="url(#caseG)" stroke="#3A2810" stroke-width="6"/>
+            <rect x="92" y="212" width="416" height="276" rx="16" fill="none" stroke="#3A2810" stroke-width="2" stroke-dasharray="6 4" opacity=".5"/>
+            <circle cx="105" cy="230" r="5" fill="url(#goldG)" stroke="#3A2810" stroke-width="2"/>
+            <circle cx="495" cy="230" r="5" fill="url(#goldG)" stroke="#3A2810" stroke-width="2"/>
+            <circle cx="105" cy="470" r="5" fill="url(#goldG)" stroke="#3A2810" stroke-width="2"/>
+            <circle cx="495" cy="470" r="5" fill="url(#goldG)" stroke="#3A2810" stroke-width="2"/>
+            <rect x="220" y="330" width="160" height="80" rx="10" fill="#FFF6DC" stroke="#3A2810" stroke-width="4"/>
+            <text x="300" y="362" text-anchor="middle" font-family="Lilita One,sans-serif" font-size="22" fill="#0E2A52" letter-spacing="2">A &amp; M</text>
+            <text x="300" y="388" text-anchor="middle" font-family="Lilita One,sans-serif" font-size="13" fill="#2A78C2" letter-spacing="3">VOTACIÓN</text>
+            <text x="300" y="402" text-anchor="middle" font-family="Lilita One,sans-serif" font-size="9" fill="#2A78C2" letter-spacing="2">OFICIAL</text>
+          </g>
+          <g>
+            <rect x="100" y="180" width="400" height="40" rx="6" fill="url(#caseInner)" stroke="#3A2810" stroke-width="4"/>
+            <line x1="100" y1="200" x2="500" y2="200" stroke="#1F1408" stroke-width="2" opacity=".6"/>
+          </g>
+          <g class="case-top">
+            <rect x="80" y="60" width="440" height="170" rx="22" fill="url(#leatherTop)" stroke="#3A2810" stroke-width="6"/>
+            <rect x="92" y="72" width="416" height="146" rx="16" fill="none" stroke="#3A2810" stroke-width="2" stroke-dasharray="6 4" opacity=".5"/>
+            <circle cx="105" cy="92" r="5" fill="url(#goldG)" stroke="#3A2810" stroke-width="2"/>
+            <circle cx="495" cy="92" r="5" fill="url(#goldG)" stroke="#3A2810" stroke-width="2"/>
+            <circle cx="105" cy="210" r="5" fill="url(#goldG)" stroke="#3A2810" stroke-width="2"/>
+            <circle cx="495" cy="210" r="5" fill="url(#goldG)" stroke="#3A2810" stroke-width="2"/>
+            <g class="case-handle">
+              <path d="M230 60 Q 230 20 300 20 Q 370 20 370 60" fill="none" stroke="#3A2810" stroke-width="14" stroke-linecap="round"/>
+              <path d="M230 60 Q 230 28 300 28 Q 370 28 370 60" fill="none" stroke="#A07840" stroke-width="8" stroke-linecap="round"/>
+              <rect x="216" y="56" width="26" height="14" rx="3" fill="url(#goldG)" stroke="#3A2810" stroke-width="2"/>
+              <rect x="358" y="56" width="26" height="14" rx="3" fill="url(#goldG)" stroke="#3A2810" stroke-width="2"/>
+            </g>
+            <g class="case-lock"><rect x="180" y="195" width="60" height="32" rx="6" fill="url(#goldG)" stroke="#3A2810" stroke-width="4"/><circle cx="210" cy="211" r="5" fill="#3A2810"/></g>
+            <g class="case-lock"><rect x="360" y="195" width="60" height="32" rx="6" fill="url(#goldG)" stroke="#3A2810" stroke-width="4"/><circle cx="390" cy="211" r="5" fill="#3A2810"/></g>
+          </g>
+        </svg>
+
+        <div class="click-hint">▸ Click para abrir</div>
+
+        <div class="docs-wrap">
+          <div class="doc boy" data-vote="boy" role="button" tabindex="0" aria-label="Votar niño">
+            <div class="clip"></div>
+            <div class="ribbon">Equipo Azul</div>
+            <div class="hd">Boleta · Voto</div>
+            <div class="big-label">NIÑO</div>
+            <div class="emoji">💙</div>
+            <div class="stripe"></div>
+            <div class="fineprint">Si votas niño,<br>viste de <b>azul</b> el día de la revelación.</div>
+            <div class="stamp-vote">Votar niño</div>
+          </div>
+          <div class="doc girl" data-vote="girl" role="button" tabindex="0" aria-label="Votar niña">
+            <div class="clip"></div>
+            <div class="ribbon" style="background:#F4B5C4;">Equipo Lila</div>
+            <div class="hd">Boleta · Voto</div>
+            <div class="big-label">NIÑA</div>
+            <div class="emoji">💜</div>
+            <div class="stripe"></div>
+            <div class="fineprint">Si votas niña,<br>viste de <b>lila</b> el día de la revelación.</div>
+            <div class="stamp-vote">Votar niña</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="vote-result boy" id="resultBoy" style="margin-top:30px;">
+      <div class="crown">★ Acta del consejo ★</div>
+      <h3>¡Votaste por NIÑO! 💙</h3>
+      <div class="dress">
+        <div class="swatch"></div>
+        <div class="text"><strong>Código de vestimenta</strong><p>El día de la revelación (<b>domingo 21 de junio 2026</b>) ven vestido(a) de <b>azul</b> para apoyar tu voto. ¡El jefe lo notará!</p></div>
+      </div>
+      <button class="change" data-reset>↺ Cambiar mi voto</button>
+    </div>
+    <div class="vote-result girl" id="resultGirl" style="margin-top:30px;">
+      <div class="crown">★ Acta del consejo ★</div>
+      <h3>¡Votaste por NIÑA! 💜</h3>
+      <div class="dress">
+        <div class="swatch"></div>
+        <div class="text"><strong>Código de vestimenta</strong><p>El día de la revelación (<b>domingo 21 de junio 2026</b>) ven vestida(o) de <b>lila</b> para apoyar tu voto. ¡El jefe lo notará!</p></div>
+      </div>
+      <button class="change" data-reset>↺ Cambiar mi voto</button>
+    </div>
+  </section>
+
+  <!-- SECCIÓN 4: CONTEO + CUENTA REGRESIVA -->
+  <section id="sec-results">
+    <div class="section-title reveal">Conteo de los votos</div>
+    <div class="section-sub reveal delay-1">así va la votación en vivo</div>
+    <div class="tally-row reveal delay-2">
+      <div class="tally-card boy">
+        <div class="lbl boy">★ Equipo Niño</div>
+        <div><span class="big" id="numBoy">0</span><span class="pct" id="pctBoy">0%</span></div>
+        <div class="bar"><div class="fill" id="fillBoy"></div></div>
+      </div>
+      <div class="tally-card girl">
+        <div class="lbl girl">★ Equipo Niña</div>
+        <div><span class="big" id="numGirl">0</span><span class="pct" id="pctGirl">0%</span></div>
+        <div class="bar"><div class="fill" id="fillGirl"></div></div>
+      </div>
+    </div>
+    <div class="section-title reveal delay-3" style="margin-top:60px;font-size:clamp(28px,3.8vw,52px);">Faltan</div>
+    <div class="countdown-grid reveal delay-4">
+      <div class="cd-cell"><span class="num" id="cdD">--</span><span class="lbl">Días</span></div>
+      <div class="cd-cell"><span class="num" id="cdH">--</span><span class="lbl">Horas</span></div>
+      <div class="cd-cell"><span class="num" id="cdM">--</span><span class="lbl">Minutos</span></div>
+      <div class="cd-cell"><span class="num" id="cdS">--</span><span class="lbl">Segundos</span></div>
+    </div>
+    <div class="signoff reveal delay-5">— para la gran revelacion —</div>
+  </section>
+
+  <!-- SECCIÓN 5: GALERÍA - móvil de cuna + trencito (ÚLTIMA) -->
+  <section id="sec-gallery" class="gallery-section">
+    <div class="section-title reveal">Galería de la fiesta</div>
+    <div class="section-sub reveal delay-1">comparte tus fotos del gran día</div>
+
+    <label class="upload-btn reveal delay-2" id="uploadBtn">
+      <input type="file" accept="image/*" id="galleryInput">
+      <span id="uploadLabel">📷 Subir foto</span>
+      <div class="progress-fill" id="uploadProgress"></div>
+    </label>
+
+    <div class="crib-mobile reveal delay-3" id="cribMobile">
+      <!-- Argolla/tope superior decorativo -->
+      <div class="crib-hoop"></div>
+      <!-- Plato de donde cuelgan las postales (gira) -->
+      <div class="crib-wheel" id="cribWheel"></div>
+    </div>
+    <div class="gallery-hint reveal delay-4" id="galleryHint">
+      <span>↔ Deslízalo para girarlo</span>
+    </div>
+
+    <!-- Trencito que pasa con las fotos -->
+    <div class="train-section reveal delay-5">
+      <div class="train-stage">
+        <div class="train" id="train">
+          <!-- Locomotora + vagones generados por JS -->
+        </div>
+        <!-- Rieles abajo -->
+        <div class="rails">
+          <div class="rail rail-top"></div>
+          <div class="rail rail-bot"></div>
+          <div class="ties"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Lightbox para ver fotos en grande -->
+<div class="lightbox" id="lightbox">
+  <button class="close-btn" id="lightboxClose" aria-label="Cerrar">✕</button>
+  <img id="lightboxImg" alt="">
+</div>
+
+<script type="module">
+/* ============================================================
+   CONFIGURACIÓN — rellena con tus credenciales de Firebase
+   https://console.firebase.google.com → Proyecto → Configuración
+   ============================================================ */
+const FIREBASE_CONFIG = {
+  apiKey:            "TU_API_KEY",
+  authDomain:        "TU_PROYECTO.firebaseapp.com",
+  projectId:         "TU_PROYECTO_ID",
+  storageBucket:     "TU_PROYECTO.appspot.com",
+  messagingSenderId: "TU_SENDER_ID",
+  appId:             "TU_APP_ID"
+};
+
+/* Fecha de la revelación: año, mes (0-based), día, hora, minutos */
+const REVEAL_DATE = new Date(2026, 5, 21, 16, 0, 0);
+
+/* ============================================================ */
+
+import { initializeApp }        from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getFirestore, doc, collection, onSnapshot,
+         setDoc, addDoc, writeBatch, increment,
+         query, orderBy, serverTimestamp }
+                                from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { getStorage, ref, uploadBytesResumable, getDownloadURL }
+                                from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js';
+
+const FIREBASE_LIVE = FIREBASE_CONFIG.apiKey !== 'TU_API_KEY';
+const USER_VOTE_KEY = 'rv-my-vote-v4';
+const UID_KEY       = 'rv-uid-v4';
+
+const $ = id => document.getElementById(id);
+
+/* ===== Firebase ===== */
+let db = null, storage = null;
+if (FIREBASE_LIVE) {
+  try {
+    const app = initializeApp(FIREBASE_CONFIG);
+    db = getFirestore(app);
+    storage = getStorage(app);
+  } catch (e) {
+    console.warn('Firebase init error:', e);
+  }
+}
+
+function getUserId() {
+  let id = localStorage.getItem(UID_KEY);
+  if (!id) {
+    id = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem(UID_KEY, id);
+  }
+  return id;
+}
+
+/* ===== Tally state ===== */
+let tallyBoy = 0, tallyGirl = 0;
+
+function updateTallyUI(boy, girl) {
+  tallyBoy = boy; tallyGirl = girl;
+  const total = boy + girl;
+  const pB = total ? Math.round(boy / total * 100) : 50;
+  const pG = total ? 100 - pB : 50;
+  $('numBoy').textContent  = boy;
+  $('numGirl').textContent = girl;
+  $('pctBoy').textContent  = pB + '%';
+  $('pctGirl').textContent = pG + '%';
+  $('fillBoy').style.width  = pB + '%';
+  $('fillGirl').style.width = pG + '%';
+  $('totalPill').textContent = total + ' voto' + (total === 1 ? '' : 's');
+}
+
+function applyMyVote(choice) {
+  document.body.classList.toggle('voted-boy',  choice === 'boy');
+  document.body.classList.toggle('voted-girl', choice === 'girl');
+}
+
+/* ===== Escucha en tiempo real ===== */
+if (db) {
+  onSnapshot(doc(db, 'summary', 'tally'), snap => {
+    const data = snap.data() || {};
+    updateTallyUI(data.boy || 0, data.girl || 0);
+  }, err => {
+    console.warn('Firestore error:', err);
+  });
+} else {
+  updateTallyUI(0, 0);
+}
+
+/* Restaura voto guardado */
+const savedVote = localStorage.getItem(USER_VOTE_KEY);
+if (savedVote) applyMyVote(savedVote);
+
+/* ===== Confetti ===== */
+function celebrate(side) {
+  const colors = side === 'boy'
+    ? ['#4DA9E8','#2A78C2','#9FD8F5','#FFD93B','#FFFFFF']
+    : ['#B69BE0','#6E55A8','#DCC4F2','#FFD93B','#FFFFFF'];
+  confetti({particleCount:120, spread:100, origin:{x:.5,y:.55}, colors, scalar:1.2, shapes:['circle','square']});
+  setTimeout(() => confetti({particleCount:80, angle:side==='boy'?60:120, spread:75, origin:{x:side==='boy'?.15:.85,y:.55}, colors, scalar:1}), 140);
+  setTimeout(() => confetti({particleCount:70, spread:120, startVelocity:38, origin:{x:.5,y:.3}, colors, scalar:1.1}), 300);
+}
+
+/* ===== Emitir voto ===== */
+async function castVote(choice) {
+  const prev = localStorage.getItem(USER_VOTE_KEY);
+  if (prev === choice) {
+    $(choice === 'boy' ? 'resultBoy' : 'resultGirl').scrollIntoView({behavior:'smooth', block:'center'});
+    return;
+  }
+
+  if (db) {
+    try {
+      const userId   = getUserId();
+      const batch    = writeBatch(db);
+      const voteRef  = doc(db, 'votes', userId);
+      const tallyRef = doc(db, 'summary', 'tally');
+      const update   = { [choice]: increment(1) };
+      if (prev) update[prev] = increment(-1);
+      batch.set(voteRef,  { choice, timestamp: serverTimestamp() }, { merge: true });
+      batch.set(tallyRef, update, { merge: true });
+      await batch.commit();
+    } catch (e) {
+      console.warn('Firestore write error (fallback local):', e);
+      updateTallyUI(
+        tallyBoy  + (choice==='boy'  ? 1 : 0) - (prev==='boy'  ? 1 : 0),
+        tallyGirl + (choice==='girl' ? 1 : 0) - (prev==='girl' ? 1 : 0)
+      );
+    }
+  } else {
+    updateTallyUI(
+      tallyBoy  + (choice==='boy'  ? 1 : 0) - (prev==='boy'  ? 1 : 0),
+      tallyGirl + (choice==='girl' ? 1 : 0) - (prev==='girl' ? 1 : 0)
+    );
+  }
+
+  localStorage.setItem(USER_VOTE_KEY, choice);
+  applyMyVote(choice);
+  celebrate(choice);
+  setTimeout(() => {
+    $(choice === 'boy' ? 'resultBoy' : 'resultGirl').scrollIntoView({behavior:'smooth', block:'center'});
+  }, 600);
+}
+
+/* ===== Maletín ===== */
+const caseStage = $('caseStage');
+caseStage.addEventListener('click', e => {
+  if (e.target.closest('.doc')) return;
+  if (!caseStage.classList.contains('open')) caseStage.classList.add('open');
+});
+caseStage.addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); caseStage.classList.toggle('open'); }
+});
+document.querySelectorAll('.doc').forEach(d => {
+  d.addEventListener('click', e => { e.stopPropagation(); castVote(d.dataset.vote); });
+  d.addEventListener('keydown', e => { if (e.key==='Enter'||e.key===' ') { e.preventDefault(); castVote(d.dataset.vote); } });
+});
+document.querySelectorAll('[data-reset]').forEach(b => {
+  b.addEventListener('click', () => { localStorage.removeItem(USER_VOTE_KEY); applyMyVote(null); window.scrollTo({top:0,behavior:'smooth'}); });
+});
+new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.target.id==='sec-vote' && e.isIntersecting && e.intersectionRatio>.5) setTimeout(()=>caseStage.classList.add('open'),800); });
+}, {threshold:[.5]}).observe($('sec-vote'));
+
+/* ===== Cuenta regresiva ===== */
+function tick() {
+  const diff = REVEAL_DATE - new Date();
+  const s = Math.max(0, Math.floor(diff / 1000));
+  $('cdD').textContent = String(Math.floor(s/86400)).padStart(2,'0');
+  $('cdH').textContent = String(Math.floor((s%86400)/3600)).padStart(2,'0');
+  $('cdM').textContent = String(Math.floor((s%3600)/60)).padStart(2,'0');
+  $('cdS').textContent = String(s%60).padStart(2,'0');
+}
+tick(); setInterval(tick, 1000);
+
+/* ===== Scroll reveal ===== */
+const revealIO = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+}, {threshold:.18, rootMargin:'0px 0px -8% 0px'});
+document.querySelectorAll('.reveal').forEach(el => revealIO.observe(el));
+
+/* ============================================================
+   EPIC-DESIGN: cinematic touches
+   - Split de section-titles en letras con stagger 3D
+   - Parallax sutil de stickers (siguen el scroll a velocidades distintas)
+   - "Respiro" suave sobre títulos cuando están visibles
+   ============================================================ */
+(function splitTexts(){
+  document.querySelectorAll('.section-title, .eyebrow').forEach(el => {
+    if (el.dataset.split === '1') return;
+    el.dataset.split = '1';
+    const words = el.textContent.split(/(\s+)/);
+    let charIdx = 0;
+    el.innerHTML = '<span class="split-text">' + words.map(w => {
+      if (/^\s+$/.test(w)) return ' ';
+      const chars = [...w].map(c => `<span class="char" style="--i:${charIdx++}">${c}</span>`).join('');
+      return `<span class="word">${chars}</span>`;
+    }).join('') + '</span>';
+  });
+})();
+
+/* Stickers parallax: envolvemos cada sticker en un wrapper que se mueve con el scroll,
+   sin pisar el `bob` que vive en el sticker mismo */
+(function wrapStickers(){
+  const stickers = [...document.querySelectorAll('.sticker')];
+  stickers.forEach((s, i) => {
+    if (s.parentElement.classList.contains('sticker-wrap')) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'sticker-wrap';
+    wrap.style.cssText = `position:absolute;left:${s.style.left || ''};right:${s.style.right || ''};top:${s.style.top || ''};bottom:${s.style.bottom || ''};width:${s.style.width || ''};will-change:transform;`;
+    wrap.dataset.speed = (0.06 + (i * 0.04)).toFixed(2);
+    /* Limpiamos la posición del sticker y la pasamos al wrap */
+    s.style.left = s.style.right = s.style.top = s.style.bottom = '';
+    s.style.position = 'static';
+    s.parentElement.insertBefore(wrap, s);
+    wrap.appendChild(s);
+  });
+  const wraps = [...document.querySelectorAll('.sticker-wrap')];
+  function updateParallax(){
+    const y = window.scrollY;
+    wraps.forEach(w => {
+      const speed = parseFloat(w.dataset.speed || 0);
+      w.style.transform = `translate3d(0, ${(-y * speed).toFixed(1)}px, 0)`;
+    });
+  }
+  window.addEventListener('scroll', updateParallax, {passive:true});
+  updateParallax();
+})();
+
+/* "Respiro" de títulos: cuando un section-title entra, vive */
+const breathIO = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) e.target.classList.add('alive');
+    else e.target.classList.remove('alive');
+  });
+}, {threshold:.4});
+document.querySelectorAll('.section-title').forEach(el => breathIO.observe(el));
+
+/* ============================================================
+   GALERÍA — móvil de cuna giratorio
+   - Postales tipo polaroid colgando de cuerdas alrededor de un eje vertical
+   - Gira automáticamente, se puede arrastrar con touch/mouse
+   - Detecta orientación automáticamente (sin mostrar etiqueta)
+   - Funciona local (preview) aunque Firebase no esté configurado
+   ============================================================ */
+const uploadBtn      = $('uploadBtn');
+const uploadInput    = $('galleryInput');
+const uploadLabel    = $('uploadLabel');
+const uploadProgress = $('uploadProgress');
+const cribMobile     = $('cribMobile');
+const cribWheel      = $('cribWheel');
+const galleryHint    = $('galleryHint');
+const trainEl        = $('train');
+const lightbox       = $('lightbox');
+const lightboxImg    = $('lightboxImg');
+const lightboxClose  = $('lightboxClose');
+
+/* Reduce y comprime la imagen antes de almacenar/subir */
+function resizeImage(file, maxDim = 1600, quality = 0.85) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const cv = document.createElement('canvas');
+      cv.width = w; cv.height = h;
+      cv.getContext('2d').drawImage(img, 0, 0, w, h);
+      cv.toBlob(b => {
+        if (!b) return reject(new Error('toBlob failed'));
+        resolve({ blob: b, width: w, height: h, orientation: w >= h ? 'h' : 'v' });
+      }, 'image/jpeg', quality);
+    };
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+/* Estado de fotos: combinación de locales (sin Firebase) + remotas (Firebase) */
+let localPhotos  = [];   /* {url, orientation, width, height, _local:true, ts} */
+let remotePhotos = [];   /* desde Firestore */
+
+function getAllPhotos() {
+  /* Más recientes primero */
+  return [...localPhotos, ...remotePhotos].sort((a, b) => (b.ts || 0) - (a.ts || 0));
+}
+
+/* Sube la foto: SIEMPRE preview local + opcional Firebase */
+async function uploadPhoto(file) {
+  uploadBtn.classList.add('uploading');
+  uploadLabel.textContent = 'Procesando…';
+  try {
+    const { blob, width, height, orientation } = await resizeImage(file);
+    const localUrl = URL.createObjectURL(blob);
+    const ts = Date.now();
+
+    /* Preview instantáneo siempre, esté o no Firebase */
+    localPhotos.unshift({ url: localUrl, orientation, width, height, _local: true, ts });
+    renderCarousel();
+    uploadLabel.textContent = '✓ ¡Agregada!';
+
+    /* Si Firebase está disponible, también sube */
+    if (storage && db) {
+      uploadLabel.textContent = 'Subiendo…';
+      try {
+        const id = (crypto.randomUUID ? crypto.randomUUID() : ts + '-' + Math.random().toString(36).slice(2));
+        const storageRef = ref(storage, `gallery/${id}.jpg`);
+        const task = uploadBytesResumable(storageRef, blob, { contentType: 'image/jpeg' });
+        task.on('state_changed', s => {
+          const pct = (s.bytesTransferred / s.totalBytes) * 100;
+          uploadProgress.style.width = pct + '%';
+          uploadLabel.textContent = `Subiendo… ${Math.round(pct)}%`;
+        });
+        await task;
+        const url = await getDownloadURL(storageRef);
+        await addDoc(collection(db, 'gallery'), {
+          url, width, height, orientation,
+          createdAt: serverTimestamp()
+        });
+        uploadLabel.textContent = '✓ ¡Subida a la nube!';
+      } catch (e) {
+        console.warn('Firebase upload falló (foto sigue visible localmente):', e);
+        uploadLabel.textContent = '✓ Solo en este dispositivo';
+      }
+    }
+
+    setTimeout(() => {
+      uploadBtn.classList.remove('uploading');
+      uploadLabel.textContent = '📷 Subir foto';
+      uploadProgress.style.width = '0%';
+    }, 1800);
+  } catch (e) {
+    console.error('Upload error:', e);
+    uploadLabel.textContent = '✗ Error';
+    setTimeout(() => {
+      uploadBtn.classList.remove('uploading');
+      uploadLabel.textContent = '📷 Subir foto';
+      uploadProgress.style.width = '0%';
+    }, 2000);
+  }
+}
+
+uploadInput.addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (f) uploadPhoto(f);
+  e.target.value = '';
+});
+
+/* Renderiza el carrusel 3D — postales distribuidas en círculo
+   con cuerdas separadas formando un cono desde el aro central */
+let activePhotoCount = 0;
+
+/* Layout values (calculados según viewport) */
+function getLayout() {
+  const isMob = window.matchMedia('(max-width: 720px)').matches;
+  return {
+    isMob,
+    hubY:       isMob ? 27  : 36,    /* centro vertical del aro */
+    polaroidY:  isMob ? 160 : 180,   /* top del m-item */
+    baseR:      isMob ? 130 : 200,
+    extraPerN:  isMob ? 14  : 22,
+  };
+}
+
+/* Dorsos decorativos: monograma A&M con detalle */
+function backFaceHTML() {
+  return `
+    <div class="face back">
+      <div class="monogram">A &amp; M</div>
+      <div class="stamp">21·06<br>2026</div>
+      <div class="back-note">— Revelación —</div>
+    </div>`;
+}
+
+function renderCarousel() {
+  const allPhotos = getAllPhotos();
+
+  /* ALTERNAR: pares (idx 0, 2, 4...) van al carrusel, impares al tren */
+  const carouselPhotos = allPhotos.filter((_, i) => i % 2 === 0);
+  const trainPhotos    = allPhotos.filter((_, i) => i % 2 === 1);
+
+  activePhotoCount = carouselPhotos.length;
+  const L = getLayout();
+
+  if (carouselPhotos.length === 0) {
+    /* Estado vacío: postal estática centrada */
+    rotation = 0; velocity = 0;
+    galleryHint?.classList.add('hidden');
+    cribWheel.innerHTML = `
+      <div class="m-item h" style="transform:translateZ(60px);">
+        <div class="polaroid empty" style="--tilt:-2deg;">
+          <div class="face front">
+            <div class="empty-icon">📷</div>
+            ¡Sé el primero<br>en colgar una foto!
+          </div>
+          ${backFaceHTML()}
+        </div>
+      </div>`;
+    renderTrain(trainPhotos);
+    return;
+  }
+
+  galleryHint?.classList.toggle('hidden', carouselPhotos.length < 2);
+
+  const n = carouselPhotos.length;
+  const extra  = Math.max(0, (n - 3)) * L.extraPerN;
+  const radius = n === 1 ? 0 : L.baseR + extra;
+
+  /* Geometría del cono de cuerdas */
+  const gap = L.polaroidY - L.hubY;
+  const strLen  = Math.sqrt(radius * radius + gap * gap);
+  const strTilt = Math.atan2(radius, gap) * 180 / Math.PI;
+
+  /* Cuerdas: separadas de las postales, salen del centro del aro */
+  const strings = n === 1 ? '' : carouselPhotos.map((_, i) => {
+    const angle = (360 / n) * i;
+    return `<div class="hang-string" style="--str-angle:${angle}deg;--str-tilt:${strTilt}deg;--str-len:${strLen}px;"></div>`;
+  }).join('');
+
+  /* Postales con cara frontal (foto) + cara trasera (en blanco con monograma) */
+  const items = carouselPhotos.map((p, i) => {
+    const angle   = n === 1 ? 0 : (360 / n) * i;
+    const tilt    = ((i * 31) % 9 - 4);
+    const tapeRot = ((i * 53) % 11 - 5);
+    const bobDel  = ((i * 0.27) % 1.5).toFixed(2);
+    return `
+      <div class="m-item ${p.orientation}"
+           style="transform:rotateY(${angle}deg) translateZ(${radius}px);"
+           data-url="${p.url}">
+        <div class="polaroid" style="--tilt:${tilt}deg;--tape-rot:${tapeRot}deg;--bob-delay:${bobDel}s;">
+          <div class="face front">
+            <img src="${p.url}" alt="" loading="lazy" draggable="false">
+          </div>
+          ${backFaceHTML()}
+        </div>
+      </div>`;
+  }).join('');
+
+  cribWheel.innerHTML = strings + items;
+
+  /* Click en cada postal abre lightbox (pero no si fue un drag) */
+  cribWheel.querySelectorAll('.m-item').forEach(el => {
+    el.addEventListener('click', () => {
+      if (Math.abs(dragTotal) < 6) openLightbox(el.dataset.url);
+    });
+  });
+
+  /* También actualiza el trencito */
+  renderTrain(trainPhotos);
+}
+
+/* ============================================================
+   TRENCITO — locomotora + vagones, todo en SVG para realismo
+   ============================================================ */
+/* Paleta de vagones — colores planos vibrantes estilo Pixar/plástico */
+const WAGON_PALETTE = [
+  ['#3A86FF'], /* azul vibrante (como la locomotora) */
+  ['#9B6FD8'], /* lila vibrante */
+  ['#6BC785'], /* verde menta */
+  ['#F4B5C4'], /* rosa */
+  ['#FF9F1C'], /* naranja */
+];
+
+function locomotiveSVG() {
+  /* Estilo plástico 3D Pixar: colores planos sólidos (azul/rojo/amarillo),
+     bordes oscuros, ruedas rojas con centro amarillo, todo redondeado.
+     SVG 260x220 con ruedas grandes centradas en y=190, radio=22 — bien dentro del viewBox */
+  return `
+    <svg class="vehicle" width="260" height="220" viewBox="0 0 260 220" xmlns="http://www.w3.org/2000/svg" overflow="visible">
+      <defs>
+        <filter id="locoShadow" x="-5%" y="-5%" width="110%" height="120%">
+          <feDropShadow dx="0" dy="3" stdDeviation="2" flood-opacity="0.25"/>
+        </filter>
+      </defs>
+
+      <!-- Humo saliendo de la chimenea -->
+      <g transform="translate(58 18)">
+        <circle class="smoke-puff" cx="0"  cy="0"   r="10" fill="#fff" style="animation-delay:0s"/>
+        <circle class="smoke-puff" cx="3"  cy="-8"  r="8"  fill="#fff" style="animation-delay:.6s"/>
+        <circle class="smoke-puff" cx="-3" cy="-16" r="11" fill="#fff" style="animation-delay:1.2s"/>
+        <circle class="smoke-puff" cx="2"  cy="-24" r="9"  fill="#fff" style="animation-delay:1.8s"/>
+      </g>
+
+      <!-- ====== CHIMENEA roja ====== -->
+      <ellipse cx="58" cy="45" rx="13" ry="4" fill="#E74C3C" stroke="#0E2A52" stroke-width="2.5"/>
+      <rect x="48" y="25" width="20" height="22" rx="3" fill="#E74C3C" stroke="#0E2A52" stroke-width="3"/>
+      <ellipse cx="58" cy="25" rx="13" ry="4.5" fill="#E74C3C" stroke="#0E2A52" stroke-width="3"/>
+
+      <!-- ====== TECHO ROJO ====== -->
+      <path d="M 38 60 Q 38 42 60 42 L 200 42 Q 222 42 222 60 L 222 70 L 38 70 Z"
+            fill="#E74C3C" stroke="#0E2A52" stroke-width="3"/>
+
+      <!-- Segunda chimenea/respiradero a la derecha -->
+      <rect x="195" y="32" width="20" height="14" rx="3" fill="#E74C3C" stroke="#0E2A52" stroke-width="2.5"/>
+      <ellipse cx="205" cy="32" rx="11" ry="3.5" fill="#E74C3C" stroke="#0E2A52" stroke-width="2.5"/>
+
+      <!-- ====== TRIM amarillo superior ====== -->
+      <rect x="38" y="65" width="184" height="8" fill="#FFD93B" stroke="#0E2A52" stroke-width="2.5"/>
+
+      <!-- ====== CUERPO AZUL ====== -->
+      <rect x="80" y="73" width="142" height="55" fill="#3A86FF" stroke="#0E2A52" stroke-width="3"/>
+
+      <!-- 3 ojos de buey (portholes) -->
+      <g>
+        <circle cx="105" cy="100" r="13" fill="#FFD93B" stroke="#0E2A52" stroke-width="3"/>
+        <circle cx="105" cy="100" r="9"  fill="#9FD8F5" stroke="#0E2A52" stroke-width="1.5"/>
+        <path d="M 100 96 Q 101 94 103 94 L 104 96 Z" fill="rgba(255,255,255,.6)"/>
+      </g>
+      <g>
+        <circle cx="150" cy="100" r="13" fill="#FFD93B" stroke="#0E2A52" stroke-width="3"/>
+        <circle cx="150" cy="100" r="9"  fill="#9FD8F5" stroke="#0E2A52" stroke-width="1.5"/>
+        <path d="M 145 96 Q 146 94 148 94 L 149 96 Z" fill="rgba(255,255,255,.6)"/>
+      </g>
+      <g>
+        <circle cx="195" cy="100" r="13" fill="#FFD93B" stroke="#0E2A52" stroke-width="3"/>
+        <circle cx="195" cy="100" r="9"  fill="#9FD8F5" stroke="#0E2A52" stroke-width="1.5"/>
+        <path d="M 190 96 Q 191 94 193 94 L 194 96 Z" fill="rgba(255,255,255,.6)"/>
+      </g>
+
+      <!-- ====== CABINA / MORRO amarillo del frente ====== -->
+      <path d="M 38 73 L 80 73 L 80 128 L 38 128 Q 25 128 22 110 L 22 95 Q 24 73 38 73 Z"
+            fill="#FFD93B" stroke="#0E2A52" stroke-width="3"/>
+
+      <!-- Borde superior amarillo de la cabina -->
+      <path d="M 38 65 L 80 65 L 80 73 L 38 73 Q 30 73 27 80 L 22 90 L 22 73 Q 24 65 38 65 Z"
+            fill="#FFD93B" stroke="#0E2A52" stroke-width="3"/>
+
+      <!-- Ventana frontal azul claro -->
+      <rect x="48" y="80" width="26" height="32" rx="5" fill="#9FD8F5" stroke="#0E2A52" stroke-width="3" transform="rotate(-3 61 96)"/>
+      <!-- Brillo en la ventana -->
+      <path d="M 50 84 L 53 84 L 57 108 L 54 108 Z" fill="rgba(255,255,255,.55)" transform="rotate(-3 61 96)"/>
+
+      <!-- ====== FARO grande amarillo ====== -->
+      <circle cx="35" cy="118" r="12" fill="#FFD93B" stroke="#0E2A52" stroke-width="3"/>
+      <circle cx="32" cy="115" r="3"  fill="#fff"/>
+
+      <!-- ====== TRIM amarillo inferior ====== -->
+      <rect x="22" y="128" width="200" height="8" fill="#FFD93B" stroke="#0E2A52" stroke-width="2.5"/>
+
+      <!-- ====== QUITAPIEDRAS rojo (cowcatcher) ====== -->
+      <path d="M 0 130 L 22 130 L 14 165 L 0 165 Z" fill="#E74C3C" stroke="#0E2A52" stroke-width="2.5"/>
+      <line x1="6"  y1="130" x2="3" y2="165" stroke="#0E2A52" stroke-width="2"/>
+      <line x1="12" y1="130" x2="8"  y2="165" stroke="#0E2A52" stroke-width="2"/>
+      <line x1="18" y1="130" x2="14" y2="165" stroke="#0E2A52" stroke-width="2"/>
+
+      <!-- ====== PLATAFORMA inferior oscura ====== -->
+      <rect x="22" y="136" width="218" height="16" fill="#0E2A52"/>
+
+      <!-- ====== BIELA AMARILLA (yellow rod entre ruedas) — pasa POR EL CENTRO de las ruedas ====== -->
+      <rect x="40" y="187" width="195" height="6" rx="3" fill="#FFD93B" stroke="#0E2A52" stroke-width="2"/>
+
+      <!-- ====== 3 RUEDAS ROJAS GRANDES con centro amarillo (centro y=190, r=22) ====== -->
+      <g transform="translate(60, 190)"><g class="wheel-spinner">
+        <circle r="22" fill="#E74C3C" stroke="#0E2A52" stroke-width="3.5"/>
+        <circle r="9"  fill="#FFD93B" stroke="#0E2A52" stroke-width="2"/>
+      </g></g>
+      <g transform="translate(135, 190)"><g class="wheel-spinner">
+        <circle r="22" fill="#E74C3C" stroke="#0E2A52" stroke-width="3.5"/>
+        <circle r="9"  fill="#FFD93B" stroke="#0E2A52" stroke-width="2"/>
+      </g></g>
+      <g transform="translate(210, 190)"><g class="wheel-spinner">
+        <circle r="22" fill="#E74C3C" stroke="#0E2A52" stroke-width="3.5"/>
+        <circle r="9"  fill="#FFD93B" stroke="#0E2A52" stroke-width="2"/>
+      </g></g>
+
+      <!-- ====== ACOPLAMIENTO trasero ====== -->
+      <rect x="240" y="100" width="14" height="6" fill="#0E2A52"/>
+      <circle cx="255" cy="103" r="5" fill="#E74C3C" stroke="#0E2A52" stroke-width="2"/>
+    </svg>`;
+}
+
+function wagonSVG(photoUrl, idx, isEmpty) {
+  /* Vagón estilo plástico 3D Pixar — color base + techo rojo + marco amarillo para la foto */
+  const bodyColor = WAGON_PALETTE[idx % WAGON_PALETTE.length][0];
+  const gid = 'wg-' + idx + '-' + Math.random().toString(36).slice(2, 7);
+
+  const photoContent = isEmpty
+    ? `<g transform="translate(110 75)">
+         <text text-anchor="middle" font-family="Lilita One,cursive" font-size="14" fill="#0E2A52" y="-4">¡Sube</text>
+         <text text-anchor="middle" font-family="Lilita One,cursive" font-size="14" fill="#0E2A52" y="14">fotos!</text>
+       </g>`
+    : `<image href="${photoUrl}" x="62" y="55" width="96" height="48" preserveAspectRatio="xMidYMid slice" clip-path="url(#${gid}-clip)"/>`;
+
+  return `
+    <svg class="vehicle wagon-svg" width="240" height="220" viewBox="0 0 240 220" xmlns="http://www.w3.org/2000/svg" overflow="visible" ${!isEmpty ? `data-url="${photoUrl}"` : ''}>
+      <defs>
+        <clipPath id="${gid}-clip">
+          <rect x="62" y="55" width="96" height="48" rx="3"/>
+        </clipPath>
+      </defs>
+
+      <!-- ====== Vents/respiraderos rojos del techo ====== -->
+      <ellipse cx="35"  cy="38" rx="10" ry="3" fill="#E74C3C" stroke="#0E2A52" stroke-width="2"/>
+      <rect    x="27"  y="22" width="16" height="18" rx="3" fill="#E74C3C" stroke="#0E2A52" stroke-width="2.5"/>
+      <ellipse cx="185" cy="38" rx="10" ry="3" fill="#E74C3C" stroke="#0E2A52" stroke-width="2"/>
+      <rect    x="177" y="22" width="16" height="18" rx="3" fill="#E74C3C" stroke="#0E2A52" stroke-width="2.5"/>
+
+      <!-- ====== TECHO ROJO redondeado ====== -->
+      <path d="M 18 55 Q 18 38 38 38 L 182 38 Q 202 38 202 55 L 202 65 L 18 65 Z"
+            fill="#E74C3C" stroke="#0E2A52" stroke-width="3"/>
+
+      <!-- ====== Trim amarillo superior ====== -->
+      <rect x="18" y="60" width="184" height="8" fill="#FFD93B" stroke="#0E2A52" stroke-width="2.5"/>
+
+      <!-- ====== CUERPO color (lateral del vagón) ====== -->
+      <rect x="18" y="68" width="184" height="60" fill="${bodyColor}" stroke="#0E2A52" stroke-width="3"/>
+
+      <!-- Trim amarillo inferior -->
+      <rect x="18" y="128" width="184" height="6" fill="#FFD93B" stroke="#0E2A52" stroke-width="2"/>
+
+      <!-- ====== PUERTA azul oscuro a la izquierda ====== -->
+      <rect x="25" y="72" width="30" height="54" rx="3" fill="#2A60BC" stroke="#0E2A52" stroke-width="2.5"/>
+      <!-- ventana de la puerta -->
+      <rect x="30" y="78" width="20" height="16" rx="2" fill="#9FD8F5" stroke="#0E2A52" stroke-width="2"/>
+      <path d="M 32 80 L 34 80 L 38 92 L 36 92 Z" fill="rgba(255,255,255,.6)"/>
+      <!-- manilla -->
+      <circle cx="50" cy="106" r="2.5" fill="#FFD93B" stroke="#0E2A52" stroke-width="1.5"/>
+
+      <!-- ====== MARCO AMARILLO para la foto (centro) ====== -->
+      <rect x="58" y="74" width="104" height="48" rx="6" fill="#FFD93B" stroke="#0E2A52" stroke-width="3"/>
+      <rect x="62" y="55" width="96" height="48" rx="3" fill="#FFF6DC" stroke="#0E2A52" stroke-width="2"/>
+      ${photoContent}
+      <rect x="62" y="55" width="96" height="48" rx="3" fill="none" stroke="#0E2A52" stroke-width="1.5" pointer-events="none"/>
+
+      <!-- ====== Ventana pequeña derecha ====== -->
+      <rect x="170" y="80" width="22" height="22" rx="3" fill="#9FD8F5" stroke="#0E2A52" stroke-width="2.5"/>
+      <path d="M 172 82 L 175 82 L 180 100 L 177 100 Z" fill="rgba(255,255,255,.6)"/>
+
+      <!-- ====== Etiqueta A & M debajo ====== -->
+      <rect x="78" y="108" width="64" height="14" rx="3" fill="#FFF6DC" stroke="#0E2A52" stroke-width="1.5"/>
+      <text x="110" y="118" text-anchor="middle" font-family="Lilita One,cursive" font-size="9" fill="#0E2A52" letter-spacing="2">A &amp; M</text>
+
+      <!-- ====== Plataforma oscura ====== -->
+      <rect x="18" y="134" width="204" height="16" fill="#0E2A52"/>
+
+      <!-- ====== Biela amarilla — pasa POR EL CENTRO de las ruedas ====== -->
+      <rect x="40" y="187" width="160" height="6" rx="3" fill="#FFD93B" stroke="#0E2A52" stroke-width="2"/>
+
+      <!-- ====== 3 RUEDAS rojas GRANDES con centro amarillo (y=190, r=20) ====== -->
+      <g transform="translate(55, 190)"><g class="wheel-spinner">
+        <circle r="20" fill="#E74C3C" stroke="#0E2A52" stroke-width="3.5"/>
+        <circle r="8"  fill="#FFD93B" stroke="#0E2A52" stroke-width="2"/>
+      </g></g>
+      <g transform="translate(120, 190)"><g class="wheel-spinner">
+        <circle r="20" fill="#E74C3C" stroke="#0E2A52" stroke-width="3.5"/>
+        <circle r="8"  fill="#FFD93B" stroke="#0E2A52" stroke-width="2"/>
+      </g></g>
+      <g transform="translate(185, 190)"><g class="wheel-spinner">
+        <circle r="20" fill="#E74C3C" stroke="#0E2A52" stroke-width="3.5"/>
+        <circle r="8"  fill="#FFD93B" stroke="#0E2A52" stroke-width="2"/>
+      </g></g>
+
+      <!-- ====== Acoplamientos rojos (knobs) en ambos extremos ====== -->
+      <rect x="2"   y="100" width="16" height="5" fill="#0E2A52"/>
+      <circle cx="0"   cy="103" r="5" fill="#E74C3C" stroke="#0E2A52" stroke-width="2"/>
+      <rect x="222" y="100" width="16" height="5" fill="#0E2A52"/>
+      <circle cx="240" cy="103" r="5" fill="#E74C3C" stroke="#0E2A52" stroke-width="2"/>
+    </svg>`;
+}
+
+function renderTrain(photos) {
+  /* Si no hay fotos, mostramos solo locomotora + 1 vagón vacío decorativo */
+  const items = photos.length > 0 ? photos : [{ url: '', empty: true }];
+
+  trainEl.innerHTML =
+    locomotiveSVG() +
+    items.map((p, i) => wagonSVG(p.url, i, !!p.empty)).join('');
+
+  /* Velocidad ~constante: trenes más largos tardan más en cruzar */
+  const baseDur = 28, extraPerWagon = 3;
+  trainEl.style.setProperty('--train-dur', (baseDur + items.length * extraPerWagon) + 's');
+
+  /* Click en una foto del vagón → lightbox */
+  trainEl.querySelectorAll('.wagon-svg[data-url]').forEach(el => {
+    el.style.cursor = 'pointer';
+    el.addEventListener('click', () => openLightbox(el.dataset.url));
+  });
+}
+
+/* ===== Animación 3D del carrusel ===== */
+let rotation     = 0;       /* ángulo actual del wheel */
+let velocity     = 0;       /* impulso al soltar */
+const AUTO_SPEED = 0.18;    /* deg/frame en automático */
+let isDragging   = false;
+let lastX        = 0;
+let lastDx       = 0;
+let dragTotal    = 0;
+let lastMoveT    = 0;
+
+function carouselLoop() {
+  if (!isDragging && activePhotoCount >= 2) {
+    rotation += AUTO_SPEED;
+    /* Momentum decay después de soltar */
+    rotation += velocity;
+    velocity *= 0.94;
+    if (Math.abs(velocity) < 0.05) velocity = 0;
+  } else if (isDragging) {
+    /* deja a pointermove acumular en rotation */
+  }
+  cribWheel.style.transform = `rotateY(${rotation}deg)`;
+  requestAnimationFrame(carouselLoop);
+}
+requestAnimationFrame(carouselLoop);
+
+/* Drag / swipe handlers */
+cribMobile.addEventListener('pointerdown', e => {
+  if (e.target.closest('.upload-btn')) return;
+  isDragging = true;
+  lastX = e.clientX;
+  lastDx = 0;
+  dragTotal = 0;
+  velocity = 0;
+  cribMobile.classList.add('dragging');
+  try { cribMobile.setPointerCapture(e.pointerId); } catch(_) {}
+  lastMoveT = performance.now();
+  galleryHint.classList.add('hidden');
+});
+cribMobile.addEventListener('pointermove', e => {
+  if (!isDragging) return;
+  const dx = e.clientX - lastX;
+  rotation += dx * 0.45;
+  lastDx = dx;
+  dragTotal += Math.abs(dx);
+  lastX = e.clientX;
+  lastMoveT = performance.now();
+});
+function endDrag(e) {
+  if (!isDragging) return;
+  isDragging = false;
+  cribMobile.classList.remove('dragging');
+  /* Solo aplica momentum si el último movimiento fue reciente */
+  const dt = performance.now() - lastMoveT;
+  velocity = dt < 60 ? lastDx * 0.5 : 0;
+  try { cribMobile.releasePointerCapture(e.pointerId); } catch(_) {}
+}
+cribMobile.addEventListener('pointerup',     endDrag);
+cribMobile.addEventListener('pointercancel', endDrag);
+cribMobile.addEventListener('pointerleave',  endDrag);
+
+/* Listener Firestore en tiempo real (si Firebase está activo) */
+if (db) {
+  try {
+    onSnapshot(query(collection(db, 'gallery'), orderBy('createdAt', 'desc')), snap => {
+      remotePhotos = snap.docs.map(d => {
+        const data = d.data();
+        return {
+          url: data.url,
+          orientation: data.orientation,
+          width: data.width, height: data.height,
+          ts: data.createdAt?.toMillis?.() || 0
+        };
+      });
+      renderCarousel();
+    });
+  } catch (e) { console.warn('Gallery listener error:', e); }
+}
+
+/* Render inicial (vacío hasta que llegue algo) */
+renderCarousel();
+
+/* ===== Lightbox ===== */
+function openLightbox(url) {
+  lightboxImg.src = url;
+  lightbox.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeLightbox() {
+  lightbox.classList.remove('open');
+  lightboxImg.src = '';
+  document.body.style.overflow = '';
+}
+lightboxClose.addEventListener('click', closeLightbox);
+lightbox.addEventListener('click', e => { if (e.target === lightbox) closeLightbox(); });
+window.addEventListener('keydown', e => { if (e.key === 'Escape' && lightbox.classList.contains('open')) closeLightbox(); });
+
+/* ============================================================
+   SCROLL-DRIVEN VIDEO — pre-decode a ImageBitmap + Canvas
+   ============================================================
+   El problema clásico de scrubbing con video.currentTime es
+   que cada cambio dispara un SEEK (decodificar desde el último
+   keyframe), lo cual es lento — especialmente en móvil. Eso
+   causa que el video "no siga" el scroll en tiempo real.
+
+   Solución: en la carga, recorremos el video una vez y
+   capturamos N frames a ImageBitmaps (GPU-friendly). Después
+   solo pintamos la bitmap correspondiente al canvas — esto
+   es instantáneo (~0.5ms). El scroll queda perfectamente
+   fluido a cualquier velocidad.
+   ============================================================ */
+const bg       = $('bg');
+const bgVideo  = $('bgVideo');
+const bgCanvas = $('bgCanvas');
+const progress = $('progress');
+const loader   = $('vLoader');
+const loaderMsg = $('vLoaderMsg');
+const ctx      = bgCanvas.getContext('2d', { alpha: false });
+
+/* Cantidad de frames pre-decodificados — más = más fluido pero más memoria.
+   Adaptativo: menos en móvil para no agotar RAM. */
+const IS_MOBILE  = window.matchMedia('(max-width: 720px)').matches;
+const FRAME_COUNT = IS_MOBILE ? 60 : 90;
+/* Resolución máxima de cada bitmap (ancho). Mantenemos el aspect ratio. */
+const MAX_BMP_W  = IS_MOBILE ? 720 : 1280;
+
+const frames = [];   /* Array<ImageBitmap> con los frames pre-decodificados */
+let ready    = false;
+let lastIdx  = -1;
+
+/* Ajusta el canvas al viewport con DPR para que se vea nítido */
+function resizeCanvas() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  bgCanvas.width  = Math.round(window.innerWidth  * dpr);
+  bgCanvas.height = Math.round(window.innerHeight * dpr);
+  lastIdx = -1;  /* fuerza redraw */
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 100));
+
+/* Dibuja un frame con comportamiento object-fit: cover */
+function drawFrame(bmp) {
+  if (!bmp) return;
+  const cw = bgCanvas.width, ch = bgCanvas.height;
+  const cR = cw / ch;
+  const fR = bmp.width / bmp.height;
+  let sx, sy, sw, sh;
+  if (fR > cR) {
+    sh = bmp.height;
+    sw = sh * cR;
+    sx = (bmp.width - sw) / 2;
+    sy = 0;
+  } else {
+    sw = bmp.width;
+    sh = sw / cR;
+    sx = 0;
+    sy = (bmp.height - sh) / 2;
+  }
+  ctx.drawImage(bmp, sx, sy, sw, sh, 0, 0, cw, ch);
+}
+
+/* Calcula el frame correspondiente a la posición de scroll y lo dibuja */
+function drawForScroll() {
+  if (!ready || frames.length === 0) return;
+  const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+  const pct = maxScroll > 0 ? Math.max(0, Math.min(1, window.scrollY / maxScroll)) : 0;
+  progress.style.width = (pct * 100) + '%';
+  const idx = Math.round(pct * (frames.length - 1));
+  if (idx !== lastIdx) {
+    drawFrame(frames[idx]);
+    lastIdx = idx;
+  }
+}
+
+/* Loop continuo: sigue al scroll en tiempo real, sin lag */
+function rafLoop() {
+  drawForScroll();
+  requestAnimationFrame(rafLoop);
+}
+requestAnimationFrame(rafLoop);
+
+/* Helper: hace seek y espera al frame */
+function seekTo(t) {
+  return new Promise(resolve => {
+    const onSeeked = () => { bgVideo.removeEventListener('seeked', onSeeked); resolve(); };
+    bgVideo.addEventListener('seeked', onSeeked);
+    try { bgVideo.currentTime = t; } catch(e) { resolve(); }
+  });
+}
+
+/* Pre-decodifica los frames a ImageBitmaps */
+async function preDecode() {
+  /* Espera a que el video tenga dimensiones y duración */
+  if (!bgVideo.videoWidth || !bgVideo.duration) {
+    await new Promise(resolve => {
+      const check = () => {
+        if (bgVideo.videoWidth && bgVideo.duration) resolve();
+        else bgVideo.addEventListener('loadedmetadata', check, {once:true});
+      };
+      check();
+    });
+  }
+
+  /* Calcula tamaño objetivo de las bitmaps */
+  const srcW = bgVideo.videoWidth, srcH = bgVideo.videoHeight;
+  const aspect = srcW / srcH;
+  let bmpW = Math.min(MAX_BMP_W, srcW);
+  let bmpH = Math.round(bmpW / aspect);
+
+  /* iOS Safari: si createImageBitmap no soporta resize, usaremos res nativa */
+  let useResize = true;
+  try {
+    const test = await createImageBitmap(bgVideo, { resizeWidth: bmpW, resizeHeight: bmpH });
+    test.close && test.close();
+  } catch(e) { useResize = false; }
+
+  /* Decodifica cada frame */
+  const total = bgVideo.duration - 0.04;
+  for (let i = 0; i < FRAME_COUNT; i++) {
+    const t = (i / (FRAME_COUNT - 1)) * total;
+    await seekTo(t);
+    let bmp;
+    try {
+      bmp = useResize
+        ? await createImageBitmap(bgVideo, { resizeWidth: bmpW, resizeHeight: bmpH, resizeQuality: 'medium' })
+        : await createImageBitmap(bgVideo);
+    } catch(e) {
+      /* Fallback: usa el frame en bruto vía canvas intermedio */
+      const tmp = document.createElement('canvas');
+      tmp.width = bmpW; tmp.height = bmpH;
+      tmp.getContext('2d').drawImage(bgVideo, 0, 0, bmpW, bmpH);
+      bmp = await createImageBitmap(tmp);
+    }
+    frames[i] = bmp;
+    loaderMsg.textContent = `Preparando la revelación… ${Math.round((i+1)/FRAME_COUNT*100)}%`;
+  }
+
+  ready = true;
+  bg.classList.add('ready');
+  loader.classList.add('hidden');
+  lastIdx = -1;
+  drawForScroll();
+}
+
+/* Inicia el pre-decode cuando hay metadata */
+if (bgVideo.readyState >= 1) {
+  preDecode().catch(err => { console.error(err); loader.classList.add('hidden'); });
+} else {
+  bgVideo.addEventListener('loadedmetadata', () => {
+    preDecode().catch(err => { console.error(err); loader.classList.add('hidden'); });
+  }, {once:true});
+}
+
+/* Fallback si el video no carga en 10s */
+setTimeout(() => { if (!ready) loader.classList.add('hidden'); }, 10000);
+
+/* Recalcula scroll en cambios de viewport (mobile address bar) */
+let lastH = window.innerHeight;
+setInterval(() => {
+  if (window.innerHeight !== lastH) { lastH = window.innerHeight; lastIdx = -1; }
+}, 500);
+</script>
+</body>
+</html>
